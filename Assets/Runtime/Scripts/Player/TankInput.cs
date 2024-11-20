@@ -10,9 +10,11 @@ namespace TinyTanks.Player
     {
         public int controllerIndex;
         public float turnSensitivity;
+        public float stickSmoothing;
 
         private TankController tank;
-        private Vector2 lastStickInput;
+        private Vector2 lastRightStickInput;
+        private float smoothedRightRotationInput;
 
         private void Awake() { tank = GetComponent<TankController>(); }
 
@@ -29,9 +31,11 @@ namespace TinyTanks.Player
                 tank.throttle = (trackLeft + trackRight) * 0.5f;
                 tank.steering = (trackLeft - trackRight) * 0.5f;
 
-                tank.turretRotation += Vector3.Cross(stickInput, lastStickInput).z * turnSensitivity;
+                var rightRotationInput = Vector3.Cross(stickInput, lastRightStickInput).z * turnSensitivity;
+                smoothedRightRotationInput = Mathf.Lerp(smoothedRightRotationInput, rightRotationInput, Time.deltaTime / Mathf.Max(Time.deltaTime, stickSmoothing));
+                tank.turretRotation += smoothedRightRotationInput;
 
-                lastStickInput = stickInput;
+                lastRightStickInput = stickInput;
             }
         }
     }
