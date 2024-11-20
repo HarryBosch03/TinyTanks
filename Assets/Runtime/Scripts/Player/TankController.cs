@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace TinyTanks.Player
@@ -20,10 +22,9 @@ namespace TinyTanks.Player
         [Space]
         public Transform turretRotor;
 
-
         private Rigidbody body;
         private bool onGround;
-        private RaycastHit groundHit;
+        private RaycastHit?[] groundHits = new RaycastHit?[4];
 
         public float throttle { get; set; }
         public float steering { get; set; }
@@ -33,13 +34,13 @@ namespace TinyTanks.Player
 
         private void FixedUpdate()
         {
-            CheckForGround();
+            CheckIfOnGround();
             MoveTank();
         }
 
-        private void CheckForGround()
+        private void CheckIfOnGround()
         {
-            var corners = new[]
+            var points = new[]
             {
                 transform.TransformPoint(groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z),
                 transform.TransformPoint(-groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z),
@@ -47,36 +48,36 @@ namespace TinyTanks.Player
                 transform.TransformPoint(groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z),
             };
 
-            var hits = new RaycastHit?[4];
-            for (var i = 0; i < 4; i++)
+            onGround = false;
+            for (var i = 0; i < points.Length; i++)
             {
-                var ray = new Ray(corners[i] + Vector3.up, Vector3.down);
-                if (Physics.Raycast(ray, out var hit, 2f, groundCheckMask)) hits[i] = hit;
-                else hits[i] = null;
+                var point = points[i];
+                var ray = new Ray(point + transform.up, -transform.up);
+                if (Physics.Raycast(ray, out var hit, 1f, groundCheckMask))
+                {
+                    onGround = true;
+                    groundHits[i] = hit;
+                }
+                else groundHits[i] = null;
             }
-
-            
-            
-            Debug.Log(onGround ? groundHit.collider.name : "null");
         }
 
         private void MoveTank()
         {
-            if (onGround)
-            {
-                var localVelX = Vector3.Dot(transform.right, body.linearVelocity);
-                var localVelZ = Vector3.Dot(transform.forward, body.linearVelocity);
+            if (!onGround) return;
 
-                localVelX = 0f;
-                localVelZ = Mathf.MoveTowards(localVelZ, throttle * maxSpeed, Time.deltaTime / Mathf.Max(Time.deltaTime, accelerationTime));
+            var localVelX = Vector3.Dot(transform.right, body.linearVelocity);
+            var localVelZ = Vector3.Dot(transform.forward, body.linearVelocity);
 
-                body.angularVelocity = Vector3.MoveTowards(body.angularVelocity, Vector3.up * maxTurnSpeed * steering, Time.deltaTime / Mathf.Max(Time.deltaTime, turnAccelerationTime));
+            localVelX = 0f;
+            localVelZ = Mathf.MoveTowards(localVelZ, throttle * maxSpeed, Time.deltaTime / Mathf.Max(Time.deltaTime, accelerationTime));
 
-                body.linearVelocity = transform.right * localVelX + transform.forward * localVelZ + Vector3.Project(body.linearVelocity, transform.up);
+            body.angularVelocity = Vector3.MoveTowards(body.angularVelocity, Vector3.up * maxTurnSpeed * steering, Time.deltaTime / Mathf.Max(Time.deltaTime, turnAccelerationTime));
 
-                turretRotation %= 360f;
-                turretRotor.localRotation = Quaternion.Euler(0f, turretRotation, 0f);
-            }
+            body.linearVelocity = transform.right * localVelX + transform.forward * localVelZ + Vector3.Project(body.linearVelocity, transform.up);
+
+            turretRotation %= 360f;
+            turretRotor.localRotation = Quaternion.Euler(0f, turretRotation, 0f);
         }
 
         private void Update() { turretRotor.localRotation = Quaternion.Euler(0f, turretRotation, 0f); }
