@@ -11,9 +11,16 @@ namespace TinyTanks.Projectiles
         public GameObject hitFx;
 
         private float age;
-        
+
+        [HideInInspector]
+        public Vector3 position;
         [HideInInspector]
         public Vector3 velocity;
+
+        private void OnEnable()
+        {
+            position = transform.position;
+        }
 
         private void Start()
         {
@@ -22,8 +29,8 @@ namespace TinyTanks.Projectiles
 
         private void FixedUpdate()
         {
-            var ray = new Ray(transform.position, velocity);
-            if (Physics.Raycast(ray, out var hit, velocity.magnitude * Time.deltaTime * 1.01f))
+            var ray = new Ray(position, velocity);
+            if (Physics.Raycast(ray, out var hit, velocity.magnitude * Time.fixedDeltaTime * 1.01f))
             {
                 if (hitFx != null) Instantiate(hitFx, hit.point, Quaternion.LookRotation(hit.normal));
                 Destroy(gameObject);
@@ -31,10 +38,16 @@ namespace TinyTanks.Projectiles
             
             if (age > maxAge) Destroy(gameObject);
             
-            transform.position += velocity * Time.deltaTime;
-            velocity += Physics.gravity * Time.deltaTime;
+            position += velocity * Time.fixedDeltaTime;
+            velocity += Physics.gravity * Time.fixedDeltaTime;
             
-            age += Time.deltaTime;
+            age += Time.fixedDeltaTime;
+        }
+
+        private void LateUpdate()
+        {
+            transform.position = position + velocity * (Time.time - Time.fixedTime);
+            transform.rotation = Quaternion.LookRotation(velocity);
         }
     }
 }

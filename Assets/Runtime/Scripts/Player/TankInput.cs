@@ -1,11 +1,13 @@
 using System.Linq;
+using FishNet.Object;
+using FishNet.Object.Prediction;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace TinyTanks.Player
 {
     [RequireComponent(typeof(TankController))]
-    public class TankInput : MonoBehaviour
+    public class TankInput : NetworkBehaviour
     {
         public int controllerIndex;
         public Vector2 normalTurnSensitivity = new Vector2(1f, 8f);
@@ -23,7 +25,7 @@ namespace TinyTanks.Player
         private void Update()
         {
             var gp = Gamepad.all.ElementAtOrDefault(controllerIndex);
-            if (gp != null)
+            if (gp != null && Application.isFocused && IsOwner)
             {
                 var trackLeft = gp.leftTrigger.ReadValue();
                 var trackRight = gp.rightTrigger.ReadValue();
@@ -35,10 +37,10 @@ namespace TinyTanks.Player
                 tank.steering = (trackLeft - trackRight) * 0.5f;
 
                 var sensitivity = tank.useSight ? scopedTurnedSensitivity : normalTurnSensitivity;
-                
+
                 var leftRotationInput = Vector3.Cross(leftStickInput, lastLeftStickInput).z * sensitivity.x;
                 smoothedLeftRotationInput = Mathf.Lerp(smoothedLeftRotationInput, leftRotationInput, Time.deltaTime / Mathf.Max(Time.deltaTime, stickSmoothing));
-                
+
                 var rightRotationInput = Vector3.Cross(rightStickInput, lastRightStickInput).z * sensitivity.y;
                 smoothedRightRotationInput = Mathf.Lerp(smoothedRightRotationInput, rightRotationInput, Time.deltaTime / Mathf.Max(Time.deltaTime, stickSmoothing));
 
@@ -48,7 +50,7 @@ namespace TinyTanks.Player
                 lastLeftStickInput = leftStickInput;
 
                 if (gp.leftShoulder.wasPressedThisFrame) tank.SetUseSight(!tank.useSight);
-                
+
                 if (gp.rightShoulder.wasPressedThisFrame) tank.StartShooting();
                 if (gp.rightShoulder.wasReleasedThisFrame) tank.StopShooting();
 

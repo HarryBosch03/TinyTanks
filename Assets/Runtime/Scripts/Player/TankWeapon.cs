@@ -14,12 +14,12 @@ namespace TinyTanks.Player
         public float recoilForce;
         public bool automatic;
 
-        private bool shooting;
         private Rigidbody body;
         private float reloadTimer;
 
         public event Action WeaponFiredEvent;
         
+        public bool shooting { get; private set; }
         public bool isReloading => reloadTimer > 0f;
         public float reloadPercent => 1f - reloadTimer / fireDelay;
 
@@ -29,19 +29,14 @@ namespace TinyTanks.Player
             if (string.IsNullOrEmpty(displayName)) displayName = name;
         }
         
-        public void StartShooting()
+        public void SetShooting(bool shooting)
         {
-            shooting = true;
-        }
-
-        public void StopShooting()
-        {
-            shooting = false;
+            this.shooting = shooting;
         }
 
         private void FixedUpdate()
         {
-            if (reloadTimer > 0f) reloadTimer -= Time.deltaTime;
+            if (reloadTimer > 0f) reloadTimer -= Time.fixedDeltaTime;
 
             if (shooting && reloadTimer <= 0f)
             {

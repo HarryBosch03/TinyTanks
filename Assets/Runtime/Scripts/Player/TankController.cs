@@ -1,11 +1,14 @@
 using System;
+using FishNet.Object;
+using FishNet.Object.Prediction;
+using FishNet.Transporting;
 using UnityEngine;
 using Unity.Cinemachine;
 
 namespace TinyTanks.Player
 {
     [RequireComponent(typeof(Rigidbody))]
-    public class TankController : MonoBehaviour
+    public class TankController : NetworkBehaviour
     {
         public float maxSpeed;
         public float accelerationTime;
@@ -32,24 +35,27 @@ namespace TinyTanks.Player
         [Space]
         public TankWeapon currentWeapon;
         public TankWeapon[] weapons;
-        
+
         [Space]
         public CinemachineCamera followCamera;
         public CinemachineCamera sightCamera;
+
+        public bool isOwnerDisplay;
 
         private Camera mainCamera;
         private Rigidbody body;
         private bool onGround;
         private Quaternion lastOrientation;
-
-        public event Action ChangeWeaponEvent;
         
+        public event Action ChangeWeaponEvent;
+
         public bool stabsEnabled { get; private set; }
         public bool useSight { get; private set; }
 
         public float throttle { get; set; }
         public float steering { get; set; }
         public Vector2 turretRotation { get; set; }
+        public bool isActiveViewer { get; private set; }
 
         private void Awake()
         {
@@ -63,27 +69,119 @@ namespace TinyTanks.Player
             SetStabs(true);
         }
 
-        public void SetStabs(bool stabsEnabled)
+        public override void OnStartNetwork()
         {
-            this.stabsEnabled = stabsEnabled;
+            TimeManager.OnTick += OnTick;
+            TimeManager.OnPostTick += OnPostTick;
+
+            SetIsActiveViewer(Owner.IsLocalClient);
         }
-        
+
+        private void SetIsActiveViewer(bool isActiveViewer)
+        {
+            this.isActiveViewer = isActiveViewer;
+            UpdateCameraStates();
+        }
+
+        public override void OnStopNetwork()
+        {
+            TimeManager.OnTick -= OnTick;
+            TimeManager.OnPostTick -= OnPostTick;
+        }
+
+        private void OnTick()
+        {
+            RunInputs(CreateReplicateData());
+            isOwnerDisplay = IsOwner;
+        }
+
+        private ReplicateData CreateReplicateData()
+        {
+            if (!IsOwner) return default;
+
+            var data = new ReplicateData();
+
+            data.throttle = throttle;
+            data.steering = steering;
+            data.stabsEnabled = stabsEnabled;
+            data.useSight = useSight;
+            data.turretRotation = turretRotation;
+            data.currentWeaponIndex = Array.IndexOf(weapons, currentWeapon);
+            data.shooting = currentWeapon.shooting;
+            
+            return data;
+        }
+
+        [Replicate]
+        private void RunInputs(ReplicateData data, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
+        {
+            if (!IsOwner)
+            {
+                turretRotation = data.turretRotation;
+                if (data.stabsEnabled != stabsEnabled) SetStabs(data.stabsEnabled);
+                if (data.useSight != useSight) SetUseSight(data.useSight);
+                if (weapons[data.currentWeaponIndex] != currentWeapon) ChangeWeapon(weapons[data.currentWeaponIndex]);
+                if (data.shooting != currentWeapon.shooting) currentWeapon.SetShooting(data.shooting);
+            }
+
+            CheckIfOnGround();
+            MoveTank(data);
+            RotateTurret();
+        }
+
+        private void OnPostTick() { CreateReconcile(); }
+
+        public override void CreateReconcile()
+        {
+            var data = new ReconcileData();
+
+            data.position = transform.position;
+            data.rotation = transform.rotation;
+            data.linearVelocity = body.linearVelocity;
+            data.angularVelocity = body.angularVelocity;
+
+            ReconcileState(data);
+        }
+
+        [Reconcile]
+        private void ReconcileState(ReconcileData data, Channel channel = Channel.Unreliable)
+        {
+            transform.position = data.position;
+            transform.rotation = data.rotation;
+            body.linearVelocity = data.linearVelocity;
+            body.angularVelocity = data.angularVelocity;
+        }
+
+        public void SetStabs(bool stabsEnabled) { this.stabsEnabled = stabsEnabled; }
+
         public void SetUseSight(bool useSight)
         {
             this.useSight = useSight;
+            UpdateCameraStates();
+        }
 
-            followCamera.gameObject.SetActive(!useSight);
-            sightCamera.gameObject.SetActive(useSight);
+        private void UpdateCameraStates()
+        {
+            if (isActiveViewer)
+            {
+                followCamera.gameObject.SetActive(!useSight);
+                sightCamera.gameObject.SetActive(useSight);
+            }
+            else
+            {
+                followCamera.gameObject.SetActive(false);
+                sightCamera.gameObject.SetActive(false);
+            }
         }
 
         public void StartShooting()
         {
-            if (currentWeapon != null) currentWeapon.StartShooting();
+            currentWeapon.SetShooting(true);
         }
 
         public void StopShooting()
         {
-            if (currentWeapon != null) currentWeapon.StopShooting();
+            currentWeapon.SetShooting(false);
         }
 
         public void ChangeWeapon()
@@ -91,25 +189,17 @@ namespace TinyTanks.Player
             var index = Array.IndexOf(weapons, currentWeapon);
             var c = weapons.Length;
             index = ((index + 1) % c + c) % c;
+            ChangeWeapon(weapons[index]);
+        }
 
-            if (currentWeapon != null) currentWeapon.StopShooting();
-            
-            currentWeapon = weapons[index];
-            
+        private void ChangeWeapon(TankWeapon newWeapon)
+        {
+            if (currentWeapon != null) currentWeapon.SetShooting(false);
+            currentWeapon = newWeapon;
             ChangeWeaponEvent?.Invoke();
         }
-        
-        private void FixedUpdate()
-        {
-            CheckIfOnGround();
-            MoveTank();
-            RotateTurret();
-        }
 
-        public Vector3 PredictProjectileArc()
-        {
-            return currentWeapon != null ? currentWeapon.PredictProjectileArc() : turretAltitudeRotor.position + turretAltitudeRotor.forward * 1000f;
-        }
+        public Vector3 PredictProjectileArc() { return currentWeapon != null ? currentWeapon.PredictProjectileArc() : turretAltitudeRotor.position + turretAltitudeRotor.forward * 1000f; }
 
         private void RotateTurret()
         {
@@ -118,13 +208,13 @@ namespace TinyTanks.Player
 
             turretRotation.x = ((turretRotation.x + 180f) % 360f + 360f) % 360f - 180f;
             turretRotation.y = ((turretRotation.y + 180f) % 360f + 360f) % 360f - 180f;
-            
+
             if (limitTurretX) turretRotation.x = Mathf.Clamp(turretRotation.x, turretLimitX.x, turretLimitX.y);
             turretRotation.y = Mathf.Clamp(turretRotation.y, turretLimitY.x, turretLimitY.y);
 
             if (turretAzimuthRotor != null) turretAzimuthRotor.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
             if (turretAltitudeRotor != null) turretAltitudeRotor.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
-            
+
             this.turretRotation = turretRotation;
         }
 
@@ -136,6 +226,7 @@ namespace TinyTanks.Player
                 stabsOrientation = Quaternion.Inverse(transform.rotation) * stabsOrientation;
                 turretRotation = new Vector2(stabsOrientation.eulerAngles.y, -stabsOrientation.eulerAngles.x);
             }
+
             lastOrientation = transform.rotation;
         }
 
@@ -165,7 +256,7 @@ namespace TinyTanks.Player
             }
         }
 
-        private void MoveTank()
+        private void MoveTank(ReplicateData data)
         {
             if (!onGround) return;
 
@@ -173,20 +264,17 @@ namespace TinyTanks.Player
             var localVelZ = Vector3.Dot(transform.forward, body.linearVelocity);
 
             localVelX = 0f;
-            localVelZ = Mathf.MoveTowards(localVelZ, throttle * maxSpeed, Time.deltaTime / Mathf.Max(Time.deltaTime, accelerationTime));
+            localVelZ = Mathf.MoveTowards(localVelZ, data.throttle * maxSpeed, Time.fixedDeltaTime / Mathf.Max(Time.fixedDeltaTime, accelerationTime));
 
             var localAngularVelocity = transform.InverseTransformVector(body.angularVelocity);
-            localAngularVelocity.y = Mathf.MoveTowards(localAngularVelocity.y, maxTurnSpeed * steering, Time.deltaTime / Mathf.Max(Time.deltaTime, turnAccelerationTime));
+            localAngularVelocity.y = Mathf.MoveTowards(localAngularVelocity.y, maxTurnSpeed * data.steering, Time.fixedDeltaTime / Mathf.Max(Time.fixedDeltaTime, turnAccelerationTime));
             body.angularVelocity = transform.TransformVector(localAngularVelocity);
-            
+
             var newVelocity = transform.right * localVelX + transform.forward * localVelZ + Vector3.Project(body.linearVelocity, transform.up);
             body.linearVelocity = newVelocity;
         }
 
-        private void Update()
-        {
-            RotateTurret(); 
-        }
+        private void Update() { RotateTurret(); }
 
         private void OnDrawGizmos()
         {
@@ -197,6 +285,39 @@ namespace TinyTanks.Player
             Gizmos.DrawRay(new Vector3(-groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z), Vector3.up);
             Gizmos.DrawRay(new Vector3(-groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z), Vector3.up);
             Gizmos.DrawRay(new Vector3(groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z), Vector3.up);
+        }
+
+        public struct ReconcileData : IReconcileData
+        {
+            public Vector3 position;
+            public Quaternion rotation;
+            public Vector3 linearVelocity;
+            public Vector3 angularVelocity;
+
+            private uint tick;
+
+            public uint GetTick() => tick;
+            public void SetTick(uint value) => tick = value;
+            public void Dispose() { }
+        }
+
+        public struct ReplicateData : IReplicateData
+        {
+            public float throttle;
+            public float steering;
+
+            public Vector2 turretRotation;
+
+            public bool stabsEnabled;
+            public bool useSight;
+            public bool shooting;
+            public int currentWeaponIndex;
+
+            private uint tick;
+
+            public uint GetTick() => tick;
+            public void SetTick(uint value) => tick = value;
+            public void Dispose() { }
         }
     }
 }
