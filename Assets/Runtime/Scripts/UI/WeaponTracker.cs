@@ -1,4 +1,4 @@
-using TinyTanks.Player;
+using TinyTanks.Tanks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,6 +8,7 @@ namespace TinyTanks.UI
     public class WeaponTracker : MonoBehaviour
     {
         public TMP_Text text;
+        public Image icon;
         public Image background;
         public AnimationCurve flashCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
 
@@ -23,6 +24,7 @@ namespace TinyTanks.UI
             {
                 gameObject.SetActive(true);
                 text.text = weapon.displayName;
+                if (weapon.icon != null) icon.sprite = weapon.icon;
             }
             else
             {
@@ -51,6 +53,7 @@ namespace TinyTanks.UI
             else
             {
                 flashTime += Time.deltaTime;
+                background.fillAmount = 1f;
                 alpha = flashCurve.Evaluate(flashTime);
             }
 

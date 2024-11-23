@@ -1,11 +1,12 @@
 using System;
+using System.Linq;
 using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Transporting;
-using UnityEngine;
 using Unity.Cinemachine;
+using UnityEngine;
 
-namespace TinyTanks.Player
+namespace TinyTanks.Tanks
 {
     [RequireComponent(typeof(Rigidbody))]
     public class TankController : NetworkBehaviour
@@ -18,8 +19,9 @@ namespace TinyTanks.Player
         public float turnAccelerationTime;
 
         [Space]
-        public float groundSpring;
-        public float groundDamping;
+        public float suspensionSpring = 30f;
+        public float suspensionDamping = 3f;
+        public float suspensionOffset = 0f;
 
         [Space]
         public LayerMask groundCheckMask;
@@ -33,34 +35,32 @@ namespace TinyTanks.Player
         public Vector2 turretLimitY;
 
         [Space]
-        public TankWeapon currentWeapon;
         public TankWeapon[] weapons;
 
         [Space]
-        public CinemachineCamera followCamera;
+        public CinemachineFollow followCamera;
+        public Vector3 followCameraOffset = new Vector3(0f, 0.8f, -2f);
         public CinemachineCamera sightCamera;
 
-        public bool isOwnerDisplay;
-
-        private Camera mainCamera;
-        private Rigidbody body;
         private bool onGround;
         private Quaternion lastOrientation;
-        
-        public event Action ChangeWeaponEvent;
 
+        public Rigidbody body { get; private set; }
         public bool stabsEnabled { get; private set; }
         public bool useSight { get; private set; }
+        public float freeLookRotation { get; set; }
 
         public float throttle { get; set; }
         public float steering { get; set; }
         public Vector2 turretRotation { get; set; }
         public bool isActiveViewer { get; private set; }
 
+        public Vector3[] leftTrackGroundSamples { get; } = new Vector3[2];
+        public Vector3[] rightTrackGroundSamples { get; } = new Vector3[2];
+
         private void Awake()
         {
             body = GetComponent<Rigidbody>();
-            mainCamera = Camera.main;
         }
 
         private void Start()
@@ -92,7 +92,6 @@ namespace TinyTanks.Player
         private void OnTick()
         {
             RunInputs(CreateReplicateData());
-            isOwnerDisplay = IsOwner;
         }
 
         private ReplicateData CreateReplicateData()
@@ -106,8 +105,8 @@ namespace TinyTanks.Player
             data.stabsEnabled = stabsEnabled;
             data.useSight = useSight;
             data.turretRotation = turretRotation;
-            data.currentWeaponIndex = Array.IndexOf(weapons, currentWeapon);
-            data.shooting = currentWeapon.shooting;
+            if (weapons.Length > 0) data.weapon0Shooting = weapons[0].shooting;
+            if (weapons.Length > 1) data.weapon1Shooting = weapons[1].shooting;
             
             return data;
         }
@@ -120,8 +119,8 @@ namespace TinyTanks.Player
                 turretRotation = data.turretRotation;
                 if (data.stabsEnabled != stabsEnabled) SetStabs(data.stabsEnabled);
                 if (data.useSight != useSight) SetUseSight(data.useSight);
-                if (weapons[data.currentWeaponIndex] != currentWeapon) ChangeWeapon(weapons[data.currentWeaponIndex]);
-                if (data.shooting != currentWeapon.shooting) currentWeapon.SetShooting(data.shooting);
+                if (weapons.Length > 0 && data.weapon0Shooting != weapons[0]) weapons[0].SetShooting(data.weapon0Shooting);
+                if (weapons.Length > 1 && data.weapon1Shooting != weapons[1]) weapons[1].SetShooting(data.weapon1Shooting);
             }
 
             CheckIfOnGround();
@@ -172,34 +171,21 @@ namespace TinyTanks.Player
                 followCamera.gameObject.SetActive(false);
                 sightCamera.gameObject.SetActive(false);
             }
+
+            if (!followCamera.gameObject.activeSelf) freeLookRotation = 0f;
         }
 
-        public void StartShooting()
+        public void StartShooting(int weaponIndex)
         {
-            currentWeapon.SetShooting(true);
+            if (weapons.Length > weaponIndex) weapons[weaponIndex].SetShooting(true);
         }
 
-        public void StopShooting()
+        public void StopShooting(int weaponIndex)
         {
-            currentWeapon.SetShooting(false);
+            if (weapons.Length > weaponIndex) weapons[weaponIndex].SetShooting(false);
         }
 
-        public void ChangeWeapon()
-        {
-            var index = Array.IndexOf(weapons, currentWeapon);
-            var c = weapons.Length;
-            index = ((index + 1) % c + c) % c;
-            ChangeWeapon(weapons[index]);
-        }
-
-        private void ChangeWeapon(TankWeapon newWeapon)
-        {
-            if (currentWeapon != null) currentWeapon.SetShooting(false);
-            currentWeapon = newWeapon;
-            ChangeWeaponEvent?.Invoke();
-        }
-
-        public Vector3 PredictProjectileArc() { return currentWeapon != null ? currentWeapon.PredictProjectileArc() : turretAltitudeRotor.position + turretAltitudeRotor.forward * 1000f; }
+        public Vector3 PredictProjectileArc() { return weapons.Length > 0 ? weapons[0].PredictProjectileArc() : turretAltitudeRotor.position + turretAltitudeRotor.forward * 1024f; }
 
         private void RotateTurret()
         {
@@ -232,27 +218,42 @@ namespace TinyTanks.Player
 
         private void CheckIfOnGround()
         {
-            var points = new[]
+            onGround = false;
+            
+            sampleTrack(new []
             {
-                transform.TransformPoint(groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z),
                 transform.TransformPoint(-groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z),
                 transform.TransformPoint(-groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z),
-                transform.TransformPoint(groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z),
-            };
-
-            onGround = false;
-            for (var i = 0; i < points.Length; i++)
+            }, leftTrackGroundSamples);
+            
+            sampleTrack(new []
             {
-                var point = points[i];
-                var ray = new Ray(point + transform.up, -transform.up);
-                if (Physics.Raycast(ray, out var hit, 1f, groundCheckMask))
+                transform.TransformPoint(groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z),
+                transform.TransformPoint(groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z),
+            }, rightTrackGroundSamples);
+            
+            void sampleTrack(Vector3[] points, Vector3[] samples)
+            {
+                for (var i = 0; i < points.Length; i++)
                 {
-                    onGround = true;
+                    var point = points[i] + Vector3.up * suspensionOffset;
+                    var distance = 0.2f;
+                    var ray = new Ray(point + transform.up * distance, -transform.up);
+                    if (Physics.Raycast(ray, out var hit, distance, groundCheckMask))
+                    {
+                        onGround = true;
 
-                    var velocity = body.GetPointVelocity(hit.point);
-                    var force = ((hit.point - point) * groundSpring - velocity * groundDamping) * body.mass;
-                    body.AddForceAtPosition(Vector3.Project(force, hit.normal), hit.point);
-                }
+                        var velocity = body.GetPointVelocity(hit.point);
+                        var force = ((hit.point - point) * suspensionSpring - velocity * suspensionDamping) * body.mass;
+                        body.AddForceAtPosition(Vector3.Project(force, hit.normal), hit.point);
+                    
+                        samples[i] = hit.point;
+                    }
+                    else
+                    {
+                        samples[i] = point;
+                    }
+                }    
             }
         }
 
@@ -274,7 +275,33 @@ namespace TinyTanks.Player
             body.linearVelocity = newVelocity;
         }
 
-        private void Update() { RotateTurret(); }
+        private void Update()
+        {
+            RotateTurret();
+            AlignSight();
+
+            freeLookRotation %= 360f;
+            followCamera.FollowOffset = Quaternion.Euler(0f, freeLookRotation, 0f) * followCameraOffset;
+        }
+
+        private void AlignSight()
+        {
+            if (weapons.Length == 0)
+            {
+                sightCamera.transform.localRotation = Quaternion.identity;
+                return;
+            }
+
+            const float maxRange = 1024f;
+            var ray = new Ray(weapons[0].muzzle.position, weapons[0].muzzle.forward);
+            var point = ray.GetPoint(maxRange);
+            if (Physics.Raycast(ray, out var hit, maxRange))
+            {
+                point = hit.point;
+            }
+            
+            sightCamera.transform.LookAt(point);
+        }
 
         private void OnDrawGizmos()
         {
@@ -310,8 +337,8 @@ namespace TinyTanks.Player
 
             public bool stabsEnabled;
             public bool useSight;
-            public bool shooting;
-            public int currentWeaponIndex;
+            public bool weapon0Shooting;
+            public bool weapon1Shooting;
 
             private uint tick;
 

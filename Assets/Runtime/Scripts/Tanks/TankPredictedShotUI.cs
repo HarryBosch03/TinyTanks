@@ -1,7 +1,6 @@
-using System;
 using UnityEngine;
 
-namespace TinyTanks.Player
+namespace TinyTanks.Tanks
 {
     [DefaultExecutionOrder(300)]
     [RequireComponent(typeof(TankController))]
@@ -20,7 +19,15 @@ namespace TinyTanks.Player
         
         private void LateUpdate()
         {
-            target.anchoredPosition = mainCamera.WorldToScreenPoint(tank.PredictProjectileArc());
+            if (tank.isActiveViewer && !tank.useSight)
+            {
+                target.gameObject.SetActive(true);
+                target.anchoredPosition = mainCamera.WorldToScreenPoint(tank.PredictProjectileArc());
+            }
+            else
+            {
+                target.gameObject.SetActive(false);
+            }
         }
     }
 }

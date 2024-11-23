@@ -1,9 +1,7 @@
-using System;
 using Unity.Cinemachine;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
-namespace TinyTanks.Player
+namespace TinyTanks.Tanks
 {
     [RequireComponent(typeof(TankWeapon))]
     public class WeaponCameraShake : MonoBehaviour

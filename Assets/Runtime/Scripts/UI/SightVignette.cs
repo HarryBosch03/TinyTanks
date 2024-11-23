@@ -1,5 +1,5 @@
 using System;
-using TinyTanks.Player;
+using TinyTanks.Tanks;
 using UnityEngine;
 
 namespace TinyTanks.UI

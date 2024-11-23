@@ -2,12 +2,13 @@ using System;
 using TinyTanks.Projectiles;
 using UnityEngine;
 
-namespace TinyTanks.Player
+namespace TinyTanks.Tanks
 {
     public class TankWeapon : MonoBehaviour
     {
         public string displayName;
         public Transform muzzle;
+        public Sprite icon;
         public Projectile projectile;
         public float fireDelay;
         public float projectileSpeed;
