@@ -19,7 +19,6 @@ namespace TinyTanks.Tanks
 
         private TankWeapon weapon;
         private Vector3 basePosition;
-        private Quaternion baseRotation;
         
         private float position;
         private float velocity;
@@ -28,7 +27,6 @@ namespace TinyTanks.Tanks
         {
             weapon = GetComponent<TankWeapon>();
             basePosition = target.transform.localPosition;
-            baseRotation = target.transform.localRotation;
         }
 
         private void OnEnable()
@@ -46,7 +44,7 @@ namespace TinyTanks.Tanks
             velocity += recoilImpulse;
         }
 
-        private void FixedUpdate()
+        private void LateUpdate()
         {
             var force = -position * recoilSpring - velocity * recoilDamping;
             
@@ -56,7 +54,7 @@ namespace TinyTanks.Tanks
             if (weapon.enabled)
             {
                 target.transform.localPosition = basePosition + translationAxis * position;
-                target.transform.localRotation = baseRotation * Quaternion.AngleAxis(rotationAxis.magnitude * position, rotationAxis.normalized);
+                target.transform.rotation = weapon.muzzle.rotation * Quaternion.AngleAxis(rotationAxis.magnitude * position, rotationAxis.normalized);
             }
         }
     }

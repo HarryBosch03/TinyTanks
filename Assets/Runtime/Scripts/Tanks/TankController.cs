@@ -43,7 +43,7 @@ namespace TinyTanks.Tanks
         public CinemachineCamera sightCamera;
 
         private bool onGround;
-        private Quaternion lastOrientation;
+        private Vector3 worldAimVector;
 
         public Rigidbody body { get; private set; }
         public bool stabsEnabled { get; private set; }
@@ -52,7 +52,8 @@ namespace TinyTanks.Tanks
 
         public float throttle { get; set; }
         public float steering { get; set; }
-        public Vector2 turretRotation { get; set; }
+        public Vector2 turretRotation { get; private set; }
+        public Vector2 turretDelta { get; set; }
         public bool isActiveViewer { get; private set; }
 
         public Vector3[] leftTrackGroundSamples { get; } = new Vector3[2];
@@ -104,9 +105,11 @@ namespace TinyTanks.Tanks
             data.steering = steering;
             data.stabsEnabled = stabsEnabled;
             data.useSight = useSight;
-            data.turretRotation = turretRotation;
+            data.turretDelta = turretDelta;
             if (weapons.Length > 0) data.weapon0Shooting = weapons[0].shooting;
             if (weapons.Length > 1) data.weapon1Shooting = weapons[1].shooting;
+
+            turretDelta = Vector2.zero;
             
             return data;
         }
@@ -116,7 +119,6 @@ namespace TinyTanks.Tanks
         {
             if (!IsOwner)
             {
-                turretRotation = data.turretRotation;
                 if (data.stabsEnabled != stabsEnabled) SetStabs(data.stabsEnabled);
                 if (data.useSight != useSight) SetUseSight(data.useSight);
                 if (weapons.Length > 0 && data.weapon0Shooting != weapons[0]) weapons[0].SetShooting(data.weapon0Shooting);
@@ -125,7 +127,7 @@ namespace TinyTanks.Tanks
 
             CheckIfOnGround();
             MoveTank(data);
-            RotateTurret();
+            RotateTurret(data);
         }
 
         private void OnPostTick() { CreateReconcile(); }
@@ -138,7 +140,9 @@ namespace TinyTanks.Tanks
             data.rotation = transform.rotation;
             data.linearVelocity = body.linearVelocity;
             data.angularVelocity = body.angularVelocity;
-
+            data.turretRotation = turretRotation;
+            data.worldAimVector = worldAimVector;
+            
             ReconcileState(data);
         }
 
@@ -149,6 +153,8 @@ namespace TinyTanks.Tanks
             transform.rotation = data.rotation;
             body.linearVelocity = data.linearVelocity;
             body.angularVelocity = data.angularVelocity;
+            turretRotation = data.turretRotation;
+            worldAimVector = data.worldAimVector;
         }
 
         public void SetStabs(bool stabsEnabled) { this.stabsEnabled = stabsEnabled; }
@@ -187,33 +193,37 @@ namespace TinyTanks.Tanks
 
         public Vector3 PredictProjectileArc() { return weapons.Length > 0 ? weapons[0].PredictProjectileArc() : turretAltitudeRotor.position + turretAltitudeRotor.forward * 1024f; }
 
-        private void RotateTurret()
+        private void RotateTurret(ReplicateData data)
         {
-            ApplyStabs();
             var turretRotation = this.turretRotation;
 
+            if (stabsEnabled)
+            {
+                var localVector = transform.InverseTransformDirection(worldAimVector);
+                var rotation = Quaternion.LookRotation(localVector, transform.up);
+                turretRotation = new Vector2(-rotation.y, rotation.x);
+            }
+            
+            turretRotation += data.turretDelta;
+            turretRotation = ClampTurretRotation(turretRotation);
+            
+            if (turretAzimuthRotor != null) turretAzimuthRotor.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
+            if (turretAltitudeRotor != null) turretAltitudeRotor.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
+
+            worldAimVector = transform.rotation * Quaternion.Euler(-turretRotation.y, turretRotation.x, 0f) * Vector3.forward;
+
+            this.turretRotation = turretRotation;
+        }
+
+        private Vector2 ClampTurretRotation(Vector2 turretRotation)
+        {
             turretRotation.x = ((turretRotation.x + 180f) % 360f + 360f) % 360f - 180f;
             turretRotation.y = ((turretRotation.y + 180f) % 360f + 360f) % 360f - 180f;
 
             if (limitTurretX) turretRotation.x = Mathf.Clamp(turretRotation.x, turretLimitX.x, turretLimitX.y);
             turretRotation.y = Mathf.Clamp(turretRotation.y, turretLimitY.x, turretLimitY.y);
 
-            if (turretAzimuthRotor != null) turretAzimuthRotor.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
-            if (turretAltitudeRotor != null) turretAltitudeRotor.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
-
-            this.turretRotation = turretRotation;
-        }
-
-        private void ApplyStabs()
-        {
-            if (stabsEnabled)
-            {
-                var stabsOrientation = lastOrientation * Quaternion.Euler(-turretRotation.y, turretRotation.x, 0f);
-                stabsOrientation = Quaternion.Inverse(transform.rotation) * stabsOrientation;
-                turretRotation = new Vector2(stabsOrientation.eulerAngles.y, -stabsOrientation.eulerAngles.x);
-            }
-
-            lastOrientation = transform.rotation;
+            return turretRotation;
         }
 
         private void CheckIfOnGround()
@@ -265,10 +275,10 @@ namespace TinyTanks.Tanks
             var localVelZ = Vector3.Dot(transform.forward, body.linearVelocity);
 
             localVelX = 0f;
-            localVelZ = Mathf.MoveTowards(localVelZ, data.throttle * maxSpeed, Time.fixedDeltaTime / Mathf.Max(Time.fixedDeltaTime, accelerationTime));
+            localVelZ += (data.throttle * maxSpeed - localVelZ) * 2f * Time.fixedDeltaTime / accelerationTime;
 
             var localAngularVelocity = transform.InverseTransformVector(body.angularVelocity);
-            localAngularVelocity.y = Mathf.MoveTowards(localAngularVelocity.y, maxTurnSpeed * data.steering, Time.fixedDeltaTime / Mathf.Max(Time.fixedDeltaTime, turnAccelerationTime));
+            localAngularVelocity.y += (maxTurnSpeed * data.steering - localAngularVelocity.y) * 2f * Time.fixedDeltaTime / turnAccelerationTime;
             body.angularVelocity = transform.TransformVector(localAngularVelocity);
 
             var newVelocity = transform.right * localVelX + transform.forward * localVelZ + Vector3.Project(body.linearVelocity, transform.up);
@@ -277,11 +287,14 @@ namespace TinyTanks.Tanks
 
         private void Update()
         {
-            RotateTurret();
             AlignSight();
 
             freeLookRotation %= 360f;
             followCamera.FollowOffset = Quaternion.Euler(0f, freeLookRotation, 0f) * followCameraOffset;
+
+            var turretRotation = ClampTurretRotation(this.turretRotation + turretDelta);
+            if (turretAzimuthRotor != null) turretAzimuthRotor.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
+            if (turretAltitudeRotor != null) turretAltitudeRotor.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
         }
 
         private void AlignSight()
@@ -320,6 +333,8 @@ namespace TinyTanks.Tanks
             public Quaternion rotation;
             public Vector3 linearVelocity;
             public Vector3 angularVelocity;
+            public Vector2 turretRotation;
+            public Vector2 worldAimVector;
 
             private uint tick;
 
@@ -333,7 +348,7 @@ namespace TinyTanks.Tanks
             public float throttle;
             public float steering;
 
-            public Vector2 turretRotation;
+            public Vector2 turretDelta;
 
             public bool stabsEnabled;
             public bool useSight;

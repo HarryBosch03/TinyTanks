@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using FishNet.Object;
 using UnityEngine;
@@ -32,18 +31,14 @@ namespace TinyTanks.Tanks
                 var rightStickInput = gp.rightStick.ReadValue();
 
                 var sensitivity = tank.useSight ? scopedTurnedSensitivity : normalTurnSensitivity;
-
-                var leftRotationInput = Vector3.Cross(leftStickInput, lastLeftStickInput).z * sensitivity.x;
-                smoothedLeftRotationInput = Mathf.Lerp(smoothedLeftRotationInput, leftRotationInput, Time.deltaTime / Mathf.Max(Time.deltaTime, stickSmoothing));
-
-                var rightRotationInput = Vector3.Cross(rightStickInput, lastRightStickInput).z * sensitivity.y;
-                smoothedRightRotationInput = Mathf.Lerp(smoothedRightRotationInput, rightRotationInput, Time.deltaTime / Mathf.Max(Time.deltaTime, stickSmoothing));
+                ProcessSickInput(leftStickInput, ref smoothedLeftRotationInput, ref lastLeftStickInput, sensitivity.x);
+                ProcessSickInput(rightStickInput, ref smoothedRightRotationInput, ref lastRightStickInput, sensitivity.y);
 
                 if (tank.useSight)
                 {
                     tank.throttle = 0f;
                     tank.steering = 0f;
-                    tank.turretRotation += new Vector2(smoothedRightRotationInput, smoothedLeftRotationInput);
+                    tank.turretDelta += new Vector2(smoothedRightRotationInput, smoothedLeftRotationInput);
                     
                     if (gp.rightShoulder.wasPressedThisFrame) tank.StartShooting(0);
                     if (gp.rightShoulder.wasReleasedThisFrame) tank.StopShooting(0);
@@ -64,10 +59,16 @@ namespace TinyTanks.Tanks
 
                 if (gp.dpad.down.wasPressedThisFrame) tank.SetStabs(!tank.stabsEnabled);
                 if (gp.buttonSouth.wasPressedThisFrame) tank.SetUseSight(!tank.useSight);
-
-                lastRightStickInput = rightStickInput;
-                lastLeftStickInput = leftStickInput;
             }
+        }
+
+        private void ProcessSickInput(Vector2 input, ref float smoothedPosition, ref Vector2 lastStickInput, float sensitivity)
+        {
+            input = input.magnitude > 0.75f ? input : Vector2.zero;
+            var leftRotationInput = Vector3.Cross(input, lastStickInput).z * sensitivity;
+            smoothedPosition = Mathf.Lerp(smoothedPosition, leftRotationInput, Time.deltaTime / Mathf.Max(Time.deltaTime, stickSmoothing));
+            
+            lastStickInput = input;
         }
     }
 }
