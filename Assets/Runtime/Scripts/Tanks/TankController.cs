@@ -243,6 +243,7 @@ namespace TinyTanks.Tanks
         private void CheckIfOnGround()
         {
             onGround = false;
+            var applyForces = (Action)null;
 
             sampleTrack(new[]
             {
@@ -255,6 +256,8 @@ namespace TinyTanks.Tanks
                 transform.TransformPoint(groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z),
                 transform.TransformPoint(groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z),
             }, rightTrackGroundSamples);
+
+            applyForces?.Invoke();
 
             void sampleTrack(Vector3[] points, Vector3[] samples)
             {
@@ -269,7 +272,8 @@ namespace TinyTanks.Tanks
 
                         var velocity = body.GetPointVelocity(hit.point);
                         var force = ((hit.point - point) * suspensionSpring - velocity * suspensionDamping) * body.mass;
-                        body.AddForceAtPosition(Vector3.Project(force, hit.normal), hit.point);
+                        force = Vector3.Project(force, hit.normal);
+                        applyForces += () => addForceAtPosition(force, hit.point);
 
                         samples[i] = hit.point;
                     }
@@ -278,6 +282,18 @@ namespace TinyTanks.Tanks
                         samples[i] = point;
                     }
                 }
+            }
+            
+            void addForceAtPosition(Vector3 force, Vector3 point)
+            {
+                var lever = body.worldCenterOfMass - point;
+
+                body.linearVelocity += force / body.mass * Time.fixedDeltaTime;
+                var torque = Vector3.Cross(force, lever) * Time.fixedDeltaTime;
+                torque.x /= body.inertiaTensor.x;
+                torque.y /= body.inertiaTensor.y;
+                torque.z /= body.inertiaTensor.z;
+                body.angularVelocity += torque;
             }
         }
 
