@@ -14,8 +14,8 @@ namespace TinyTanks.Tanks
                 var source = sourceList[i];
                 var dest = destList[i];
 
-                dest.position = source.position;
-                dest.rotation = source.rotation;
+                dest.localPosition = source.localPosition;
+                dest.localRotation = source.localRotation;
             }
         }
     }

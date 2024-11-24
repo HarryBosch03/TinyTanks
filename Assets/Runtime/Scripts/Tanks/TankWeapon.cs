@@ -1,4 +1,10 @@
 using System;
+using FishNet;
+using FishNet.Managing.Timing;
+using FishNet.Object;
+using FishNet.Object.Prediction;
+using FishNet.Transporting;
+using TinyTanks.Network;
 using TinyTanks.Projectiles;
 using UnityEngine;
 
@@ -19,11 +25,14 @@ namespace TinyTanks.Tanks
         public ParticleSystem fireFx;
 
         private Rigidbody body;
-        private float reloadTimer;
+        private float startReloadTime;
 
         public event Action WeaponFiredEvent;
         
         public bool shooting { get; private set; }
+        public TimeManager timeManager => InstanceFinder.TimeManager;
+        public float serverTime => (float)timeManager.TicksToTime(timeManager.Tick);
+        public float reloadTimer => startReloadTime + fireDelay - serverTime;
         public bool isReloading => reloadTimer > 0f;
         public float reloadPercent => 1f - reloadTimer / fireDelay;
 
@@ -32,7 +41,7 @@ namespace TinyTanks.Tanks
             body = GetComponentInParent<Rigidbody>();
             if (string.IsNullOrEmpty(displayName)) displayName = name;
         }
-        
+
         public void SetShooting(bool shooting)
         {
             this.shooting = shooting;
@@ -40,8 +49,6 @@ namespace TinyTanks.Tanks
 
         private void FixedUpdate()
         {
-            if (reloadTimer > 0f) reloadTimer -= Time.fixedDeltaTime;
-
             if (shooting && reloadTimer <= 0f)
             {
                 var instance = Instantiate(projectile, muzzle.position, muzzle.rotation);
@@ -49,7 +56,7 @@ namespace TinyTanks.Tanks
                 instance.startSpeed = projectileSpeed;
             
                 instance.velocity += body.GetPointVelocity(muzzle.position);
-                reloadTimer = fireDelay;
+                startReloadTime = serverTime;
 
                 body.AddForceAtPosition(-muzzle.forward * recoilForce, muzzle.position, ForceMode.VelocityChange);
                 WeaponFiredEvent?.Invoke();

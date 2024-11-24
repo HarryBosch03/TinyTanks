@@ -3,6 +3,7 @@ using System.Linq;
 using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Transporting;
+using GameKit.Dependencies.Utilities;
 using Unity.Cinemachine;
 using UnityEngine;
 
@@ -47,6 +48,8 @@ namespace TinyTanks.Tanks
         public Vector3 followCameraOffset = new Vector3(0f, 0.8f, -2f);
         public CinemachineCamera sightCamera;
 
+        private PredictionRigidbody predictionBody;
+        
         private bool onGround;
         private Vector3 worldAimVector;
         private float trackSpeed;
@@ -65,7 +68,17 @@ namespace TinyTanks.Tanks
         public Vector3[] leftTrackGroundSamples { get; } = new Vector3[2];
         public Vector3[] rightTrackGroundSamples { get; } = new Vector3[2];
 
-        private void Awake() { body = GetComponent<Rigidbody>(); }
+        private void Awake()
+        {
+            body = GetComponent<Rigidbody>();
+            predictionBody = ObjectCaches<PredictionRigidbody>.Retrieve();
+            predictionBody.Initialize(body);
+        }
+
+        private void OnDestroy()
+        {
+            ObjectCaches<PredictionRigidbody>.StoreAndDefault(ref predictionBody);
+        }
 
         private void Start()
         {
@@ -122,13 +135,15 @@ namespace TinyTanks.Tanks
             {
                 if (data.stabsEnabled != stabsEnabled) SetStabs(data.stabsEnabled);
                 if (data.useSight != useSight) SetUseSight(data.useSight);
-                if (weapons.Length > 0 && data.weapon0Shooting != weapons[0]) weapons[0].SetShooting(data.weapon0Shooting);
-                if (weapons.Length > 1 && data.weapon1Shooting != weapons[1]) weapons[1].SetShooting(data.weapon1Shooting);
+                if (weapons.Length > 0 && data.weapon0Shooting != weapons[0].shooting) weapons[0].SetShooting(data.weapon0Shooting);
+                if (weapons.Length > 1 && data.weapon1Shooting != weapons[1].shooting) weapons[1].SetShooting(data.weapon1Shooting);
             }
 
             CheckIfOnGround();
             MoveTank(data);
             RotateTurret(data);
+            
+            predictionBody.Simulate();
         }
 
         private void OnPostTick() { CreateReconcile(); }
@@ -137,10 +152,7 @@ namespace TinyTanks.Tanks
         {
             var data = new ReconcileData();
 
-            data.position = transform.position;
-            data.rotation = transform.rotation;
-            data.linearVelocity = body.linearVelocity;
-            data.angularVelocity = body.angularVelocity;
+            data.predictionBody = predictionBody;
             data.turretRotation = turretRotation;
             data.worldAimVector = worldAimVector;
             data.trackSpeed = trackSpeed;
@@ -151,10 +163,7 @@ namespace TinyTanks.Tanks
         [Reconcile]
         private void ReconcileState(ReconcileData data, Channel channel = Channel.Unreliable)
         {
-            transform.position = data.position;
-            transform.rotation = data.rotation;
-            body.linearVelocity = data.linearVelocity;
-            body.angularVelocity = data.angularVelocity;
+            predictionBody.Reconcile(data.predictionBody);
             turretRotation = data.turretRotation;
             worldAimVector = data.worldAimVector;
             trackSpeed = data.trackSpeed;
@@ -201,12 +210,13 @@ namespace TinyTanks.Tanks
             var turretRotation = this.turretRotation;
             var worldAimVector = this.worldAimVector;
 
-            var interpolateTransform = NetworkObject.GetGraphicalObject();
-
+            var refTransform = NetworkObject.GetGraphicalObject();
+            if (refTransform == null) refTransform = transform;
+            
             if (stabsEnabled)
             {
                 worldAimVector = (Quaternion.Euler(turretAzimuthRotor.right * -turretDelta.y + transform.up * turretDelta.x) * worldAimVector).normalized;
-                var localVector = interpolateTransform.InverseTransformDirection(worldAimVector);
+                var localVector = refTransform.InverseTransformDirection(worldAimVector);
                 var rotation = Quaternion.LookRotation(localVector, Vector3.up);
                 turretRotation = new Vector2(rotation.eulerAngles.y, -rotation.eulerAngles.x);
             }
@@ -216,7 +226,7 @@ namespace TinyTanks.Tanks
             }
 
             turretRotation = ClampTurretRotation(turretRotation);
-            worldAimVector = interpolateTransform.rotation * Quaternion.Euler(-turretRotation.y, turretRotation.x, 0f) * Vector3.forward;
+            worldAimVector = refTransform.rotation * Quaternion.Euler(-turretRotation.y, turretRotation.x, 0f) * Vector3.forward;
 
             return (turretRotation, worldAimVector);
         }
@@ -243,7 +253,6 @@ namespace TinyTanks.Tanks
         private void CheckIfOnGround()
         {
             onGround = false;
-            var applyForces = (Action)null;
 
             sampleTrack(new[]
             {
@@ -256,8 +265,6 @@ namespace TinyTanks.Tanks
                 transform.TransformPoint(groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z),
                 transform.TransformPoint(groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z),
             }, rightTrackGroundSamples);
-
-            applyForces?.Invoke();
 
             void sampleTrack(Vector3[] points, Vector3[] samples)
             {
@@ -273,7 +280,7 @@ namespace TinyTanks.Tanks
                         var velocity = body.GetPointVelocity(hit.point);
                         var force = ((hit.point - point) * suspensionSpring - velocity * suspensionDamping) * body.mass;
                         force = Vector3.Project(force, hit.normal);
-                        applyForces += () => addForceAtPosition(force, hit.point);
+                        predictionBody.AddForceAtPosition(force, hit.point);
 
                         samples[i] = hit.point;
                     }
@@ -282,18 +289,6 @@ namespace TinyTanks.Tanks
                         samples[i] = point;
                     }
                 }
-            }
-            
-            void addForceAtPosition(Vector3 force, Vector3 point)
-            {
-                var lever = body.worldCenterOfMass - point;
-
-                body.linearVelocity += force / body.mass * Time.fixedDeltaTime;
-                var torque = Vector3.Cross(force, lever) * Time.fixedDeltaTime;
-                torque.x /= body.inertiaTensor.x;
-                torque.y /= body.inertiaTensor.y;
-                torque.z /= body.inertiaTensor.z;
-                body.angularVelocity += torque;
             }
         }
 
@@ -366,10 +361,7 @@ namespace TinyTanks.Tanks
 
         public struct ReconcileData : IReconcileData
         {
-            public Vector3 position;
-            public Quaternion rotation;
-            public Vector3 linearVelocity;
-            public Vector3 angularVelocity;
+            public PredictionRigidbody predictionBody;
             public Vector2 turretRotation;
             public Vector3 worldAimVector;
             public float trackSpeed;
