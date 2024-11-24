@@ -60,8 +60,8 @@ namespace TinyTanks.UI
         private void UpdateSize()
         {
             if (canvas == null) return;
-            var width = canvas.pixelRect.width;
-            rectTransform.sizeDelta = new Vector2(width + texturePad, width + texturePad);
+            var size = Mathf.Max(canvas.pixelRect.width, canvas.pixelRect.height);
+            rectTransform.sizeDelta = new Vector2(size + texturePad, size + texturePad);
         }
 
         private void OnValidate()

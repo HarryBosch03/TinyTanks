@@ -15,6 +15,9 @@ namespace TinyTanks.Tanks
         public float recoilForce;
         public bool automatic;
 
+        [Space]
+        public ParticleSystem fireFx;
+
         private Rigidbody body;
         private float reloadTimer;
 
@@ -50,6 +53,8 @@ namespace TinyTanks.Tanks
 
                 body.AddForceAtPosition(-muzzle.forward * recoilForce, muzzle.position, ForceMode.VelocityChange);
                 WeaponFiredEvent?.Invoke();
+
+                if (fireFx != null) fireFx.Play(true);
                 
                 if (!automatic) shooting = false;
             }

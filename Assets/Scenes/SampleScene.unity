@@ -423,7 +423,7 @@ GameObject:
   - component: {fileID: 588806283}
   - component: {fileID: 588806282}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: Cube.1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -531,7 +531,7 @@ GameObject:
   - component: {fileID: 770990419}
   - component: {fileID: 770990418}
   m_Layer: 0
-  m_Name: Cube (1)
+  m_Name: Cube.2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -753,6 +753,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &1027580274 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f42280b1d8562a34da38fb52cd7585b4, type: 3}
+  m_PrefabInstance: {fileID: 1335103377}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1077919723
 GameObject:
   m_ObjectHideFlags: 0
@@ -975,7 +980,7 @@ GameObject:
   - component: {fileID: 1319106546}
   - component: {fileID: 1319106545}
   m_Layer: 0
-  m_Name: Cube (2)
+  m_Name: Cube.3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1076,7 +1081,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 0}
+    m_TransformParent: {fileID: 1426065731}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: f42280b1d8562a34da38fb52cd7585b4, type: 3}
       propertyPath: m_LocalScale.y
@@ -1100,15 +1105,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f42280b1d8562a34da38fb52cd7585b4, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f42280b1d8562a34da38fb52cd7585b4, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f42280b1d8562a34da38fb52cd7585b4, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f42280b1d8562a34da38fb52cd7585b4, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -1169,6 +1174,7 @@ Transform:
   - {fileID: 770990417}
   - {fileID: 1319106544}
   - {fileID: 1652454605}
+  - {fileID: 1027580274}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1652454604
@@ -1184,7 +1190,7 @@ GameObject:
   - component: {fileID: 1652454607}
   - component: {fileID: 1652454606}
   m_Layer: 0
-  m_Name: Cube (2).1
+  m_Name: Cube.4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1289,4 +1295,3 @@ SceneRoots:
   - {fileID: 819882297}
   - {fileID: 1267950971}
   - {fileID: 1426065731}
-  - {fileID: 1335103377}

@@ -18,7 +18,6 @@ namespace TinyTanks.Tanks
         private Vector2 lastRightStickInput;
         private float smoothedLeftRotationInput;
         private float smoothedRightRotationInput;
-        private Vector2 freeCameraRotation;
 
         private void Awake() { tank = GetComponent<TankController>(); }
 

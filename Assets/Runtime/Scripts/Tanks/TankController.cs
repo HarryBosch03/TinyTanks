@@ -13,6 +13,11 @@ namespace TinyTanks.Tanks
     {
         public float maxSpeed;
         public float accelerationTime;
+        [Range(0f, 1f)]
+        public float xFriction = 0.8f;
+        [Range(0f, 1f)]
+        public float zFriction = 0.8f;
+        public float moveTilt;
 
         [Space]
         public float maxTurnSpeed;
@@ -44,6 +49,7 @@ namespace TinyTanks.Tanks
 
         private bool onGround;
         private Vector3 worldAimVector;
+        private float trackSpeed;
 
         public Rigidbody body { get; private set; }
         public bool stabsEnabled { get; private set; }
@@ -59,10 +65,7 @@ namespace TinyTanks.Tanks
         public Vector3[] leftTrackGroundSamples { get; } = new Vector3[2];
         public Vector3[] rightTrackGroundSamples { get; } = new Vector3[2];
 
-        private void Awake()
-        {
-            body = GetComponent<Rigidbody>();
-        }
+        private void Awake() { body = GetComponent<Rigidbody>(); }
 
         private void Start()
         {
@@ -76,6 +79,7 @@ namespace TinyTanks.Tanks
             TimeManager.OnPostTick += OnPostTick;
 
             SetIsActiveViewer(Owner.IsLocalClient);
+            worldAimVector = transform.forward;
         }
 
         private void SetIsActiveViewer(bool isActiveViewer)
@@ -90,10 +94,7 @@ namespace TinyTanks.Tanks
             TimeManager.OnPostTick -= OnPostTick;
         }
 
-        private void OnTick()
-        {
-            RunInputs(CreateReplicateData());
-        }
+        private void OnTick() { RunInputs(CreateReplicateData()); }
 
         private ReplicateData CreateReplicateData()
         {
@@ -110,7 +111,7 @@ namespace TinyTanks.Tanks
             if (weapons.Length > 1) data.weapon1Shooting = weapons[1].shooting;
 
             turretDelta = Vector2.zero;
-            
+
             return data;
         }
 
@@ -142,7 +143,8 @@ namespace TinyTanks.Tanks
             data.angularVelocity = body.angularVelocity;
             data.turretRotation = turretRotation;
             data.worldAimVector = worldAimVector;
-            
+            data.trackSpeed = trackSpeed;
+
             ReconcileState(data);
         }
 
@@ -155,6 +157,7 @@ namespace TinyTanks.Tanks
             body.angularVelocity = data.angularVelocity;
             turretRotation = data.turretRotation;
             worldAimVector = data.worldAimVector;
+            trackSpeed = data.trackSpeed;
         }
 
         public void SetStabs(bool stabsEnabled) { this.stabsEnabled = stabsEnabled; }
@@ -193,26 +196,37 @@ namespace TinyTanks.Tanks
 
         public Vector3 PredictProjectileArc() { return weapons.Length > 0 ? weapons[0].PredictProjectileArc() : turretAltitudeRotor.position + turretAltitudeRotor.forward * 1024f; }
 
-        private void RotateTurret(ReplicateData data)
+        private (Vector2 turretRotation, Vector3 worldAimVector) GetTurretRotation(Vector2 turretDelta)
         {
             var turretRotation = this.turretRotation;
+            var worldAimVector = this.worldAimVector;
+
+            var interpolateTransform = NetworkObject.GetGraphicalObject();
 
             if (stabsEnabled)
             {
-                var localVector = transform.InverseTransformDirection(worldAimVector);
-                var rotation = Quaternion.LookRotation(localVector, transform.up);
-                turretRotation = new Vector2(-rotation.y, rotation.x);
+                worldAimVector = (Quaternion.Euler(turretAzimuthRotor.right * -turretDelta.y + transform.up * turretDelta.x) * worldAimVector).normalized;
+                var localVector = interpolateTransform.InverseTransformDirection(worldAimVector);
+                var rotation = Quaternion.LookRotation(localVector, Vector3.up);
+                turretRotation = new Vector2(rotation.eulerAngles.y, -rotation.eulerAngles.x);
             }
-            
-            turretRotation += data.turretDelta;
+            else
+            {
+                turretRotation += turretDelta;
+            }
+
             turretRotation = ClampTurretRotation(turretRotation);
-            
+            worldAimVector = interpolateTransform.rotation * Quaternion.Euler(-turretRotation.y, turretRotation.x, 0f) * Vector3.forward;
+
+            return (turretRotation, worldAimVector);
+        }
+
+        private void RotateTurret(ReplicateData data)
+        {
+            (turretRotation, worldAimVector) = GetTurretRotation(data.turretDelta);
+
             if (turretAzimuthRotor != null) turretAzimuthRotor.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
             if (turretAltitudeRotor != null) turretAltitudeRotor.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
-
-            worldAimVector = transform.rotation * Quaternion.Euler(-turretRotation.y, turretRotation.x, 0f) * Vector3.forward;
-
-            this.turretRotation = turretRotation;
         }
 
         private Vector2 ClampTurretRotation(Vector2 turretRotation)
@@ -229,19 +243,19 @@ namespace TinyTanks.Tanks
         private void CheckIfOnGround()
         {
             onGround = false;
-            
-            sampleTrack(new []
+
+            sampleTrack(new[]
             {
                 transform.TransformPoint(-groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z),
                 transform.TransformPoint(-groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z),
             }, leftTrackGroundSamples);
-            
-            sampleTrack(new []
+
+            sampleTrack(new[]
             {
                 transform.TransformPoint(groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z),
                 transform.TransformPoint(groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z),
             }, rightTrackGroundSamples);
-            
+
             void sampleTrack(Vector3[] points, Vector3[] samples)
             {
                 for (var i = 0; i < points.Length; i++)
@@ -256,14 +270,14 @@ namespace TinyTanks.Tanks
                         var velocity = body.GetPointVelocity(hit.point);
                         var force = ((hit.point - point) * suspensionSpring - velocity * suspensionDamping) * body.mass;
                         body.AddForceAtPosition(Vector3.Project(force, hit.normal), hit.point);
-                    
+
                         samples[i] = hit.point;
                     }
                     else
                     {
                         samples[i] = point;
                     }
-                }    
+                }
             }
         }
 
@@ -274,15 +288,22 @@ namespace TinyTanks.Tanks
             var localVelX = Vector3.Dot(transform.right, body.linearVelocity);
             var localVelZ = Vector3.Dot(transform.forward, body.linearVelocity);
 
-            localVelX = 0f;
-            localVelZ += (data.throttle * maxSpeed - localVelZ) * 2f * Time.fixedDeltaTime / accelerationTime;
+            var torque = (data.throttle * maxSpeed - trackSpeed) * 2f / Mathf.Max(Time.fixedDeltaTime, accelerationTime);
+            trackSpeed += torque * Time.fixedDeltaTime;
+
+            localVelX = (0f - localVelX) * xFriction;
+            localVelZ += (trackSpeed - localVelZ) * zFriction;
 
             var localAngularVelocity = transform.InverseTransformVector(body.angularVelocity);
             localAngularVelocity.y += (maxTurnSpeed * data.steering - localAngularVelocity.y) * 2f * Time.fixedDeltaTime / turnAccelerationTime;
             body.angularVelocity = transform.TransformVector(localAngularVelocity);
 
             var newVelocity = transform.right * localVelX + transform.forward * localVelZ + Vector3.Project(body.linearVelocity, transform.up);
+            newVelocity += Vector3.ProjectOnPlane(-Physics.gravity, transform.up) * Time.fixedDeltaTime;
+            var force = (newVelocity - body.linearVelocity) / Time.fixedDeltaTime;
+
             body.linearVelocity = newVelocity;
+            body.angularVelocity += (transform.forward * Vector3.Dot(force, transform.right) - transform.right * Vector3.Dot(force, transform.forward)) * moveTilt * Time.fixedDeltaTime;
         }
 
         private void Update()
@@ -292,7 +313,7 @@ namespace TinyTanks.Tanks
             freeLookRotation %= 360f;
             followCamera.FollowOffset = Quaternion.Euler(0f, freeLookRotation, 0f) * followCameraOffset;
 
-            var turretRotation = ClampTurretRotation(this.turretRotation + turretDelta);
+            var turretRotation = GetTurretRotation(turretDelta).turretRotation;
             if (turretAzimuthRotor != null) turretAzimuthRotor.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
             if (turretAltitudeRotor != null) turretAltitudeRotor.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
         }
@@ -312,7 +333,7 @@ namespace TinyTanks.Tanks
             {
                 point = hit.point;
             }
-            
+
             sightCamera.transform.LookAt(point);
         }
 
@@ -334,7 +355,8 @@ namespace TinyTanks.Tanks
             public Vector3 linearVelocity;
             public Vector3 angularVelocity;
             public Vector2 turretRotation;
-            public Vector2 worldAimVector;
+            public Vector3 worldAimVector;
+            public float trackSpeed;
 
             private uint tick;
 
