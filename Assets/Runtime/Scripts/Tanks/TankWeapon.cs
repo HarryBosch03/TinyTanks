@@ -10,7 +10,6 @@ namespace TinyTanks.Tanks
     public class TankWeapon : MonoBehaviour
     {
         public string displayName;
-        public Transform muzzle;
         public Sprite icon;
         public Projectile projectile;
         public float fireDelay;
@@ -27,7 +26,8 @@ namespace TinyTanks.Tanks
         private float startReloadTime;
 
         public event Action WeaponFiredEvent;
-        
+
+        public Transform muzzle { get; private set; }
         public bool shooting { get; private set; }
         public TimeManager timeManager => InstanceFinder.TimeManager;
         public float serverTime => (float)timeManager.TicksToTime(timeManager.Tick);
@@ -40,6 +40,18 @@ namespace TinyTanks.Tanks
             body = GetComponentInParent<Rigidbody>();
             tank = GetComponentInParent<TankController>();
             if (string.IsNullOrEmpty(displayName)) displayName = name;
+
+        }
+
+        private void Start()
+        {
+            var index = Array.IndexOf(tank.weapons, this);
+            muzzle = index switch
+            {
+                0 => tank.physicsModel.gunMuzzle,
+                1 => tank.physicsModel.coaxMuzzle,
+                _ => throw new ArgumentOutOfRangeException()
+            };
         }
 
         public void SetShooting(bool shooting)

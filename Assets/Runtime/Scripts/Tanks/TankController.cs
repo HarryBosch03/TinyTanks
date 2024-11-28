@@ -36,8 +36,6 @@ namespace TinyTanks.Tanks
         public Canvas hud;
 
         [Space]
-        public Transform turretAzimuthRotor;
-        public Transform turretAltitudeRotor;
         public bool limitTurretX;
         public Vector2 turretLimitX;
         public Vector2 turretLimitY;
@@ -59,6 +57,8 @@ namespace TinyTanks.Tanks
         private float trackSpeed;
 
         public Rigidbody body { get; private set; }
+        public TankModel visualModel { get; private set; }
+        public TankModel physicsModel { get; private set; }
         public bool stabsEnabled { get; private set; }
         public bool useSight { get; private set; }
         public float freeLookRotation { get; set; }
@@ -68,7 +68,7 @@ namespace TinyTanks.Tanks
         public Vector2 turretRotation { get; private set; }
         public Vector2 turretDelta { get; set; }
         public bool isActiveViewer { get; private set; }
-
+        
         public static List<TankController> all = new List<TankController>();
 
         public Vector3[] leftTrackGroundSamples { get; } = new Vector3[2];
@@ -79,7 +79,19 @@ namespace TinyTanks.Tanks
             body = GetComponent<Rigidbody>();
             predictionBody = ObjectCaches<PredictionRigidbody>.Retrieve();
             predictionBody.Initialize(body);
+            
+            physicsModel = GetComponentInChildren<TankModel>();
+            var lerpTarget = NetworkObject.GetGraphicalObject();
+            visualModel = Instantiate(physicsModel, lerpTarget ? lerpTarget : physicsModel.transform);
 
+            physicsModel.name = $"{physicsModel.name}.Physics";
+            physicsModel.DisableAllBehaviours<Renderer>();
+            
+            visualModel.name = $"{visualModel.name}.Visuals";
+            visualModel.DisableAllBehaviours<Collider>();
+
+            sightCamera.transform.SetParent(visualModel.gunPivot);
+            
             SetActiveViewer(false);
         }
 
@@ -175,6 +187,14 @@ namespace TinyTanks.Tanks
             
             predictionBody.Simulate();
         }
+        
+        private void RotateTurret(ReplicateData data)
+        {
+            (turretRotation, worldAimVector) = GetTurretRotation(data.turretDelta);
+
+            physicsModel.turretMount.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
+            physicsModel.gunPivot.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
+        }
 
         private void OnPostTick() { CreateReconcile(); }
 
@@ -233,7 +253,7 @@ namespace TinyTanks.Tanks
             if (weapons.Length > weaponIndex) weapons[weaponIndex].SetShooting(false);
         }
 
-        public Vector3 PredictProjectileArc() { return weapons.Length > 0 ? weapons[0].PredictProjectileArc() : turretAltitudeRotor.position + turretAltitudeRotor.forward * 1024f; }
+        public Vector2 GetTurretRotation() => GetTurretRotation(turretDelta).turretRotation;
 
         private (Vector2 turretRotation, Vector3 worldAimVector) GetTurretRotation(Vector2 turretDelta)
         {
@@ -245,7 +265,7 @@ namespace TinyTanks.Tanks
             
             if (stabsEnabled)
             {
-                worldAimVector = (Quaternion.Euler(turretAzimuthRotor.right * -turretDelta.y + transform.up * turretDelta.x) * worldAimVector).normalized;
+                worldAimVector = (Quaternion.Euler(physicsModel.turretMount.right * -turretDelta.y + transform.up * turretDelta.x) * worldAimVector).normalized;
                 var localVector = refTransform.InverseTransformDirection(worldAimVector);
                 var rotation = Quaternion.LookRotation(localVector, Vector3.up);
                 turretRotation = new Vector2(rotation.eulerAngles.y, -rotation.eulerAngles.x);
@@ -259,14 +279,6 @@ namespace TinyTanks.Tanks
             worldAimVector = refTransform.rotation * Quaternion.Euler(-turretRotation.y, turretRotation.x, 0f) * Vector3.forward;
 
             return (turretRotation, worldAimVector);
-        }
-
-        private void RotateTurret(ReplicateData data)
-        {
-            (turretRotation, worldAimVector) = GetTurretRotation(data.turretDelta);
-
-            if (turretAzimuthRotor != null) turretAzimuthRotor.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
-            if (turretAltitudeRotor != null) turretAltitudeRotor.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
         }
 
         private Vector2 ClampTurretRotation(Vector2 turretRotation)
@@ -354,9 +366,9 @@ namespace TinyTanks.Tanks
             freeLookRotation %= 360f;
             followCamera.rotationOffset = freeLookRotation;
 
-            var turretRotation = GetTurretRotation(turretDelta).turretRotation;
-            if (turretAzimuthRotor != null) turretAzimuthRotor.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
-            if (turretAltitudeRotor != null) turretAltitudeRotor.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
+            var rotation = GetTurretRotation(turretDelta).turretRotation;
+            visualModel.turretMount.localRotation = Quaternion.Euler(0f, rotation.x, 0f);
+            visualModel.gunPivot.localRotation = Quaternion.Euler(-rotation.y, 0f, 0f);
         }
 
         private void AlignSight()
