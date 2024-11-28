@@ -9,8 +9,6 @@ namespace TinyTanks.Tanks
         public float movementLeanSmoothing = 0.5f;
         
         [Space]
-        public Transform interpolation;
-        public Transform chassis;
         public Transform leftTrack;
         public Transform rightTrack;
         public float trackSmoothing = 0.5f;
@@ -36,8 +34,6 @@ namespace TinyTanks.Tanks
                 y = Vector3.Dot(tank.transform.up, tank.body.angularVelocity),
             };
             smoothedMovementLean = Vector2.Lerp(smoothedMovementLean, movementLean, Time.deltaTime / Mathf.Max(Time.deltaTime, movementLeanSmoothing));
-
-            chassis.localRotation = Quaternion.Euler(smoothedMovementLean.x * movementLeanAmplitude.x, 0f, smoothedMovementLean.y * movementLeanAmplitude.y);
 
             UpdateTrack(leftTrack, tank.leftTrackGroundSamples, ref smoothedTrackPositionLeft, ref smoothedTrackRotationLeft);
             UpdateTrack(rightTrack, tank.rightTrackGroundSamples, ref smoothedTrackPositionRight, ref smoothedTrackRotationLeft);

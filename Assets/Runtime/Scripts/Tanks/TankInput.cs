@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using FishNet.Object;
 using UnityEngine;
@@ -5,6 +6,8 @@ using UnityEngine.InputSystem;
 
 namespace TinyTanks.Tanks
 {
+    [SelectionBase]
+    [DisallowMultipleComponent]
     [RequireComponent(typeof(TankController))]
     public class TankInput : NetworkBehaviour
     {
@@ -13,13 +16,26 @@ namespace TinyTanks.Tanks
         public Vector2 scopedTurnedSensitivity = new Vector2(2f, 2f);
         public float stickSmoothing;
 
-        private TankController tank;
         private Vector2 lastLeftStickInput;
         private Vector2 lastRightStickInput;
         private float smoothedLeftRotationInput;
         private float smoothedRightRotationInput;
+        
+        public TankController tank { get; private set; }
 
-        private void Awake() { tank = GetComponent<TankController>(); }
+        private void Awake()
+        {
+            tank = GetComponent<TankController>();
+        }
+
+        public override void OnStartNetwork()
+        {
+            base.OnStartNetwork();
+            if (Owner == null)
+            {
+                enabled = false;
+            }
+        }
 
         private void Update()
         {

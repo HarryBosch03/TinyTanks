@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using FishNet.Object;
 using FishNet.Object.Prediction;
@@ -12,13 +13,14 @@ namespace TinyTanks.Tanks
     [RequireComponent(typeof(Rigidbody))]
     public class TankController : NetworkBehaviour
     {
-        public float maxSpeed;
-        public float accelerationTime;
+        public float maxFwdSpeed = 12f;
+        public float maxReverseSpeed = 4f;
+        public float accelerationTime = 3f;
         [Range(0f, 1f)]
-        public float xFriction = 0.8f;
+        public float xFriction = 0.4f;
         [Range(0f, 1f)]
-        public float zFriction = 0.8f;
-        public float moveTilt;
+        public float zFriction = 0.4f;
+        public float moveTilt = 0.2f;
 
         [Space]
         public float maxTurnSpeed;
@@ -27,11 +29,11 @@ namespace TinyTanks.Tanks
         [Space]
         public float suspensionSpring = 30f;
         public float suspensionDamping = 3f;
-        public float suspensionOffset = 0f;
 
         [Space]
         public LayerMask groundCheckMask;
         public Vector3 groundCheckPoint;
+        public Canvas hud;
 
         [Space]
         public Transform turretAzimuthRotor;
@@ -41,11 +43,13 @@ namespace TinyTanks.Tanks
         public Vector2 turretLimitY;
 
         [Space]
+        public Bounds bounds;
+
+        [Space]
         public TankWeapon[] weapons;
 
         [Space]
-        public CinemachineFollow followCamera;
-        public Vector3 followCameraOffset = new Vector3(0f, 0.8f, -2f);
+        public CinemachineTankFollowCamera followCamera;
         public CinemachineCamera sightCamera;
 
         private PredictionRigidbody predictionBody;
@@ -65,6 +69,8 @@ namespace TinyTanks.Tanks
         public Vector2 turretDelta { get; set; }
         public bool isActiveViewer { get; private set; }
 
+        public static List<TankController> all = new List<TankController>();
+
         public Vector3[] leftTrackGroundSamples { get; } = new Vector3[2];
         public Vector3[] rightTrackGroundSamples { get; } = new Vector3[2];
 
@@ -73,6 +79,8 @@ namespace TinyTanks.Tanks
             body = GetComponent<Rigidbody>();
             predictionBody = ObjectCaches<PredictionRigidbody>.Retrieve();
             predictionBody.Initialize(body);
+
+            SetActiveViewer(false);
         }
 
         private void OnDestroy()
@@ -86,18 +94,40 @@ namespace TinyTanks.Tanks
             SetStabs(true);
         }
 
+        private void OnEnable()
+        {
+            all.Add(this);
+        }
+
+        private void OnDisable()
+        {
+            all.Remove(this);
+        }
+
+        [Server]
+        public void SetActive(bool isActive)
+        {
+            SetActiveRpc(isActive);
+        }
+
+        [ObserversRpc(RunLocally = true, ExcludeOwner = false, ExcludeServer = false)]
+        private void SetActiveRpc(bool isActive)
+        {
+            gameObject.SetActive(isActive);
+        }
+
         public override void OnStartNetwork()
         {
             TimeManager.OnTick += OnTick;
             TimeManager.OnPostTick += OnPostTick;
 
-            SetIsActiveViewer(Owner.IsLocalClient);
             worldAimVector = transform.forward;
         }
 
-        private void SetIsActiveViewer(bool isActiveViewer)
+        public void SetActiveViewer(bool isActiveViewer)
         {
             this.isActiveViewer = isActiveViewer;
+            hud.gameObject.SetActive(isActiveViewer);
             UpdateCameraStates();
         }
 
@@ -111,7 +141,7 @@ namespace TinyTanks.Tanks
 
         private ReplicateData CreateReplicateData()
         {
-            if (!IsOwner) return default;
+            if (!HasAuthority) return default;
 
             var data = new ReplicateData();
 
@@ -131,7 +161,7 @@ namespace TinyTanks.Tanks
         [Replicate]
         private void RunInputs(ReplicateData data, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
         {
-            if (!IsOwner)
+            if (!HasAuthority)
             {
                 if (data.stabsEnabled != stabsEnabled) SetStabs(data.stabsEnabled);
                 if (data.useSight != useSight) SetUseSight(data.useSight);
@@ -270,7 +300,7 @@ namespace TinyTanks.Tanks
             {
                 for (var i = 0; i < points.Length; i++)
                 {
-                    var point = points[i] + Vector3.up * suspensionOffset;
+                    var point = points[i];
                     var distance = 0.2f;
                     var ray = new Ray(point + transform.up * distance, -transform.up);
                     if (Physics.Raycast(ray, out var hit, distance, groundCheckMask))
@@ -299,7 +329,7 @@ namespace TinyTanks.Tanks
             var localVelX = Vector3.Dot(transform.right, body.linearVelocity);
             var localVelZ = Vector3.Dot(transform.forward, body.linearVelocity);
 
-            var torque = (data.throttle * maxSpeed - trackSpeed) * 2f / Mathf.Max(Time.fixedDeltaTime, accelerationTime);
+            var torque = (data.throttle * (data.throttle > 0f ? maxFwdSpeed : maxReverseSpeed) - trackSpeed) * 2f / Mathf.Max(Time.fixedDeltaTime, accelerationTime);
             trackSpeed += torque * Time.fixedDeltaTime;
 
             localVelX = (0f - localVelX) * xFriction;
@@ -322,7 +352,7 @@ namespace TinyTanks.Tanks
             AlignSight();
 
             freeLookRotation %= 360f;
-            followCamera.FollowOffset = Quaternion.Euler(0f, freeLookRotation, 0f) * followCameraOffset;
+            followCamera.rotationOffset = freeLookRotation;
 
             var turretRotation = GetTurretRotation(turretDelta).turretRotation;
             if (turretAzimuthRotor != null) turretAzimuthRotor.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
@@ -348,7 +378,7 @@ namespace TinyTanks.Tanks
             sightCamera.transform.LookAt(point);
         }
 
-        private void OnDrawGizmos()
+        private void OnDrawGizmosSelected()
         {
             Gizmos.matrix = transform.localToWorldMatrix;
             Gizmos.color = Color.green;
@@ -357,6 +387,9 @@ namespace TinyTanks.Tanks
             Gizmos.DrawRay(new Vector3(-groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z), Vector3.up);
             Gizmos.DrawRay(new Vector3(-groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z), Vector3.up);
             Gizmos.DrawRay(new Vector3(groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z), Vector3.up);
+
+            Gizmos.color = new Color(1f, 1f, 1f, 0.5f);
+            Gizmos.DrawWireCube(bounds.center, bounds.size);
         }
 
         public struct ReconcileData : IReconcileData

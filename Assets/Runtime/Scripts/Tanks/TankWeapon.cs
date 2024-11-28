@@ -1,10 +1,7 @@
 using System;
 using FishNet;
 using FishNet.Managing.Timing;
-using FishNet.Object;
-using FishNet.Object.Prediction;
-using FishNet.Transporting;
-using TinyTanks.Network;
+using TinyTanks.Health;
 using TinyTanks.Projectiles;
 using UnityEngine;
 
@@ -17,6 +14,7 @@ namespace TinyTanks.Tanks
         public Sprite icon;
         public Projectile projectile;
         public float fireDelay;
+        public DamageInstance damage;
         public float projectileSpeed;
         public float recoilForce;
         public bool automatic;
@@ -25,6 +23,7 @@ namespace TinyTanks.Tanks
         public ParticleSystem fireFx;
 
         private Rigidbody body;
+        private TankController tank;
         private float startReloadTime;
 
         public event Action WeaponFiredEvent;
@@ -39,6 +38,7 @@ namespace TinyTanks.Tanks
         private void Awake()
         {
             body = GetComponentInParent<Rigidbody>();
+            tank = GetComponentInParent<TankController>();
             if (string.IsNullOrEmpty(displayName)) displayName = name;
         }
 
@@ -53,6 +53,8 @@ namespace TinyTanks.Tanks
             {
                 var instance = Instantiate(projectile, muzzle.position, muzzle.rotation);
 
+                instance.shooter = tank.NetworkObject;
+                instance.damage = damage;
                 instance.startSpeed = projectileSpeed;
             
                 instance.velocity += body.GetPointVelocity(muzzle.position);
@@ -61,7 +63,7 @@ namespace TinyTanks.Tanks
                 body.AddForceAtPosition(-muzzle.forward * recoilForce, muzzle.position, ForceMode.VelocityChange);
                 WeaponFiredEvent?.Invoke();
 
-                if (fireFx != null) fireFx.Play(true);
+                if (fireFx != null && (!tank.isActiveViewer || !tank.sightCamera)) fireFx.Play(true);
                 
                 if (!automatic) shooting = false;
             }
