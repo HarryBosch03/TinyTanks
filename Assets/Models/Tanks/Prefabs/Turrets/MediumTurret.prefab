@@ -8,6 +8,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -8863438589355891357, guid: 27dc5e8da9638cf4fa4d89cb19fcff02, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bc6e82d15cc19634f93c683886e25e01, type: 2}
     - target: {fileID: -8679921383154817045, guid: 27dc5e8da9638cf4fa4d89cb19fcff02, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.25
@@ -64,10 +68,26 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: -7404402693337035088, guid: 27dc5e8da9638cf4fa4d89cb19fcff02, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 83a86322012f6174093ac5b67c7e29f9, type: 2}
+    - target: {fileID: -3253395734490889402, guid: 27dc5e8da9638cf4fa4d89cb19fcff02, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 83a86322012f6174093ac5b67c7e29f9, type: 2}
+    - target: {fileID: -1156941893244772313, guid: 27dc5e8da9638cf4fa4d89cb19fcff02, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 83a86322012f6174093ac5b67c7e29f9, type: 2}
     - target: {fileID: 919132149155446097, guid: 27dc5e8da9638cf4fa4d89cb19fcff02, type: 3}
       propertyPath: m_Name
       value: MediumTurret
       objectReference: {fileID: 0}
+    - target: {fileID: 7202271454713460447, guid: 27dc5e8da9638cf4fa4d89cb19fcff02, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bc6e82d15cc19634f93c683886e25e01, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -15,11 +15,11 @@ namespace TinyTanks.Tanks
     {
         public float maxFwdSpeed = 12f;
         public float maxReverseSpeed = 4f;
-        public float accelerationTime = 3f;
+        public float accelerationTime = 1.5f;
+        public AnimationCurve accelerationCurve = AnimationCurve.Linear(0f, 1f, 1f, 0f);
+        public float brakeTime = 1f;
         [Range(0f, 1f)]
         public float xFriction = 0.4f;
-        [Range(0f, 1f)]
-        public float zFriction = 0.4f;
         public float moveTilt = 0.2f;
 
         [Space]
@@ -54,7 +54,6 @@ namespace TinyTanks.Tanks
         
         private bool onGround;
         private Vector3 worldAimVector;
-        private float trackSpeed;
 
         public Rigidbody body { get; private set; }
         public TankModel visualModel { get; private set; }
@@ -205,8 +204,7 @@ namespace TinyTanks.Tanks
             data.predictionBody = predictionBody;
             data.turretRotation = turretRotation;
             data.worldAimVector = worldAimVector;
-            data.trackSpeed = trackSpeed;
-
+            
             ReconcileState(data);
         }
 
@@ -216,7 +214,6 @@ namespace TinyTanks.Tanks
             predictionBody.Reconcile(data.predictionBody);
             turretRotation = data.turretRotation;
             worldAimVector = data.worldAimVector;
-            trackSpeed = data.trackSpeed;
         }
 
         public void SetStabs(bool stabsEnabled) { this.stabsEnabled = stabsEnabled; }
@@ -341,11 +338,20 @@ namespace TinyTanks.Tanks
             var localVelX = Vector3.Dot(transform.right, body.linearVelocity);
             var localVelZ = Vector3.Dot(transform.forward, body.linearVelocity);
 
-            var torque = (data.throttle * (data.throttle > 0f ? maxFwdSpeed : maxReverseSpeed) - trackSpeed) * 2f / Mathf.Max(Time.fixedDeltaTime, accelerationTime);
-            trackSpeed += torque * Time.fixedDeltaTime;
-
+            var maxSpeed = data.throttle > 0f ? maxFwdSpeed : maxReverseSpeed;
+            if (Mathf.Abs(data.throttle * maxSpeed) > Mathf.Abs(localVelZ))
+            {
+                var t = data.throttle > 0f ? Mathf.InverseLerp(0f, maxFwdSpeed, localVelZ) : Mathf.InverseLerp(0f, -maxReverseSpeed, localVelZ);
+                var acceleration = maxSpeed * accelerationTime * accelerationCurve.Evaluate(t);
+                
+                localVelZ = Mathf.MoveTowards(localVelZ, data.throttle * maxSpeed, acceleration * Time.deltaTime);
+            }
+            else
+            {
+                localVelZ = Mathf.MoveTowards(localVelZ, data.throttle * maxSpeed, maxFwdSpeed * Time.deltaTime / brakeTime);
+            }
+            
             localVelX = (0f - localVelX) * xFriction;
-            localVelZ += (trackSpeed - localVelZ) * zFriction;
 
             var localAngularVelocity = transform.InverseTransformVector(body.angularVelocity);
             localAngularVelocity.y += (maxTurnSpeed * data.steering - localAngularVelocity.y) * 2f * Time.fixedDeltaTime / turnAccelerationTime;
@@ -387,7 +393,8 @@ namespace TinyTanks.Tanks
                 point = hit.point;
             }
 
-            sightCamera.transform.LookAt(point);
+            sightCamera.transform.LookAt(point, transform.up);
+            Debug.DrawLine(ray.origin, point, Color.magenta);
         }
 
         private void OnDrawGizmosSelected()
@@ -409,7 +416,6 @@ namespace TinyTanks.Tanks
             public PredictionRigidbody predictionBody;
             public Vector2 turretRotation;
             public Vector3 worldAimVector;
-            public float trackSpeed;
 
             private uint tick;
 

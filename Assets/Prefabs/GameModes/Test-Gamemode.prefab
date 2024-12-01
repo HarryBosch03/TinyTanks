@@ -385,15 +385,47 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 2331.8997
+      value: -5.17
       objectReference: {fileID: 0}
     - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 336.26285
+      value: 0.31
+      objectReference: {fileID: 0}
+    - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 6.88
+      objectReference: {fileID: 0}
+    - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.92913985
+      objectReference: {fileID: 0}
+    - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.004853581
+      objectReference: {fileID: 0}
+    - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.36969268
+      objectReference: {fileID: 0}
+    - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.0017362395
       objectReference: {fileID: 0}
     - target: {fileID: 5208756847167429420, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: <AssetPathHash>k__BackingField
       value: 9276737418143590972
+      objectReference: {fileID: 0}
+    - target: {fileID: 5232737888222145684, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: field of view
+      value: 65.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5232737888222145684, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: near clip plane
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7841080730049154467, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: m_Cameras.Array.size
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8829994740536057978, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
