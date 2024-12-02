@@ -1,4 +1,3 @@
-using System;
 using FishNet;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -12,15 +11,15 @@ namespace TinyTanks.Network
             var gp = Gamepad.current;
             if (gp != null && Application.isFocused && !InstanceFinder.ClientManager.Started && !InstanceFinder.ServerManager.Started)
             {
-                if (gp.rightShoulder.wasPressedThisFrame)
-                {
-                    StartHost();
-                }
-                
-                if (gp.leftShoulder.wasPressedThisFrame)
-                {
-                    StartClient();
-                }
+                if (gp.rightShoulder.wasPressedThisFrame) StartHost();
+                if (gp.leftShoulder.wasPressedThisFrame) StartClient();
+            }
+
+            var kb = Keyboard.current;
+            if (kb !=  null)
+            {
+                if (kb.spaceKey.wasPressedThisFrame) StartHost();
+                if (kb.cKey.wasPressedThisFrame) StartClient();
             }
         }
 

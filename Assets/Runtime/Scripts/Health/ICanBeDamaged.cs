@@ -60,6 +60,8 @@ namespace TinyTanks.Health
 
             public void DebugDraw()
             {
+                if (!Application.isPlaying) return;
+                
                 Debug.DrawLine(entryRay.origin, exitRay.origin, Color.yellow, 5f);
                 Debug.DrawRay(exitRay.origin, exitRay.direction * 10f, Color.yellow, 5f);
 

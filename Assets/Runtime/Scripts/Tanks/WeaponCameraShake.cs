@@ -54,7 +54,7 @@ namespace TinyTanks.Tanks
             if (weapon.enabled)
             {
                 target.transform.localPosition = basePosition + translationAxis * position;
-                target.transform.rotation *= Quaternion.AngleAxis(rotationAxis.magnitude * position, rotationAxis.normalized);
+                target.transform.rotation = weapon.muzzle.rotation * Quaternion.AngleAxis(rotationAxis.magnitude * position, rotationAxis.normalized);
             }
         }
     }

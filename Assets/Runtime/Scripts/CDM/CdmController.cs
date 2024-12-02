@@ -8,6 +8,7 @@ namespace TinyTanks.CDM
     public class CdmController : NetworkBehaviour, ICanBeDamaged
     {
         public int armorDefense;
+        public ParticleSystem spallParticles;
 
         private CdmComponent[] components;
         private Collider[] collision;
@@ -72,7 +73,7 @@ namespace TinyTanks.CDM
                     for (var j = 0; j < components.Length; j++)
                     {
                         var component = components[j];
-                        if (component.DoesIntersect(spall.ray, out var enter) && enter < hitEnter)
+                        if (!component.destroyed.Value && component.DoesIntersect(spall.ray, out var enter) && enter < hitEnter)
                         {
                             hitEnter = enter;
                             hitComponent = component;
@@ -97,19 +98,25 @@ namespace TinyTanks.CDM
                     {
                         spall.hitComponent = hitComponent.name;
                         hitComponent.Damage(1);
+                        
+                        if (spallParticles != null)
+                        {
+                            spallParticles.Emit(new ParticleSystem.EmitParams
+                            {
+                                position = spallParticles.transform.InverseTransformPoint(spall.hit),
+                            }, 1);
+                        }
                     }
                 }
             }
+
 
             report.DebugDraw();
             if (Application.isPlaying) NotifyDamagedRpc(damage, source, report);
         }
 
         [ObserversRpc(RunLocally = true)]
-        private void NotifyDamagedRpc(DamageInstance damage, DamageSource source, ICanBeDamaged.DamageReport report)
-        {
-            ICanBeDamaged.NotifyDamaged(NetworkObject, damage, source, report); 
-        }
+        private void NotifyDamagedRpc(DamageInstance damage, DamageSource source, ICanBeDamaged.DamageReport report) { ICanBeDamaged.NotifyDamaged(NetworkObject, damage, source, report); }
 
         public CdmComponent GetComponentFromName(string name)
         {

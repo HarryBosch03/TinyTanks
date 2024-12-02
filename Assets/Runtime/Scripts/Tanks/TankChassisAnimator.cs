@@ -22,8 +22,8 @@ namespace TinyTanks.Tanks
 
         private void Update()
         {
-            UpdateTrack(tank.visualModel.leftTrack, tank.leftTrackGroundSamples, ref smoothedTrackPositionLeft, ref smoothedTrackRotationLeft);
-            UpdateTrack(tank.visualModel.rightTrack, tank.rightTrackGroundSamples, ref smoothedTrackPositionRight, ref smoothedTrackRotationLeft);
+            UpdateTrack(tank.model.leftTrack, tank.leftTrackGroundSamples, ref smoothedTrackPositionLeft, ref smoothedTrackRotationLeft);
+            UpdateTrack(tank.model.rightTrack, tank.rightTrackGroundSamples, ref smoothedTrackPositionRight, ref smoothedTrackRotationLeft);
         }
 
         private void UpdateTrack(Transform track, Vector3[] samples, ref Vector2 smoothedTrackPosition, ref float smoothedTrackRotation)

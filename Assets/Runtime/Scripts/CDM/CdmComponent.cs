@@ -76,10 +76,10 @@ namespace TinyTanks.CDM
         private void UpdateRenderers()
         {
             var propertyBlock = new MaterialPropertyBlock();
-            var color = Color.Lerp(new Color(0.5f, 0.5f, 0.5f, 1f), baseColor, (float)currentHealth.Value / maxHealth);
-            color.a = alpha;
-            if (destroyed.Value) color.a *= 0.5f;
-            
+            var health = Mathf.Clamp01((float)currentHealth.Value / maxHealth);
+            var color = Color.Lerp(Color.Lerp(new Color(0.5f, 0.5f, 0.5f, 1f), baseColor, Mathf.Sin(Time.time) * 0.5f + 0.5f), baseColor, health);
+            color.a = alpha * health;
+            if (destroyed.Value) color = new Color(0.5f, 0.5f, 0.5f, 0.5f * alpha);
             if (flashTime > 0f) color = Color.white * flashBrightness;
             
             propertyBlock.SetColor("_BaseColor", color);
