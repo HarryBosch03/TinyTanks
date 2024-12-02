@@ -45,32 +45,22 @@ namespace TinyTanks.Projectiles
                 var canBeDamaged = hit.collider.GetComponentInParent<ICanBeDamaged>();
                 if (canBeDamaged != null)
                 {
-                    var angle = Vector3.Angle(-ray.direction, hit.normal);
-                    Debug.Log(angle.ToString("0"));
-                    
-                    if (canBeDamaged.canRicochet && angle > maxAngleBeforeRicochet)
-                    {
-                        ricochet = true;
-                        if (ricochetFx != null) Instantiate(ricochetFx, hit.point, Quaternion.LookRotation(hit.normal));
-                    }
-                    else if (damage.damage <= canBeDamaged.defense)
+                    canBeDamaged.Damage(damage, new DamageSource(shooter, ray, hit), out var report);
+                    if (!report.canPenetrate)
                     {
                         playHitFx = false;
                         if (ricochetFx != null) Instantiate(ricochetFx, hit.point, Quaternion.LookRotation(hit.normal));
                     }
-                    else
+                    else if (report.didRicochet)
                     {
-                        canBeDamaged.Damage(damage, new DamageSource(shooter, ray.direction, hit.normal, angle < directHitAngle));
+                        ricochet = true;
+                        if (ricochetFx != null) Instantiate(ricochetFx, hit.point, Quaternion.LookRotation(hit.normal));
+                        position = report.exitRay.origin;
+                        velocity = report.exitRay.direction * velocity.magnitude;
                     }
                 }
 
-                if (ricochet)
-                {
-                    var normal = Vector3.Reflect(ray.direction, hit.normal).normalized;
-                    position = hit.point;
-                    velocity = normal * velocity.magnitude;
-                }
-                else
+                if (!ricochet)
                 {
                     if (playHitFx && hitFx != null) Instantiate(hitFx, hit.point, Quaternion.LookRotation(hit.normal));
                     Destroy(gameObject);

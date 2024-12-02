@@ -6,12 +6,19 @@ namespace TinyTanks.Health
     public struct DamageSource
     {
         public NetworkObject invoker;
-        public bool critical;
+        public Vector3 origin;
+        public Vector3 direction;
+        public Vector3 hitPoint;
+        public Vector3 hitNormal;
 
-        public DamageSource(NetworkObject invoker, Vector3 direction, Vector3 normal, bool critical)
+        public DamageSource(NetworkObject invoker, Ray ray, RaycastHit hit)
         {
             this.invoker = invoker;
-            this.critical = critical;
+            
+            origin = ray.origin;
+            direction = ray.direction;
+            hitPoint = hit.point;
+            hitNormal = hit.normal;
         }
     }
 }

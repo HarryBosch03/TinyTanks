@@ -385,15 +385,67 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 2331.8997
+      value: -5.17
       objectReference: {fileID: 0}
     - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 336.26285
+      value: 0.31
+      objectReference: {fileID: 0}
+    - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 6.88
+      objectReference: {fileID: 0}
+    - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.92913985
+      objectReference: {fileID: 0}
+    - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.004853581
+      objectReference: {fileID: 0}
+    - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.36969268
+      objectReference: {fileID: 0}
+    - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.0017362395
+      objectReference: {fileID: 0}
+    - target: {fileID: 5208756847167429420, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: <PrefabId>k__BackingField
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5208756847167429420, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: NetworkBehaviours.Array.size
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 5208756847167429420, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: <AssetPathHash>k__BackingField
       value: 9276737418143590972
+      objectReference: {fileID: 0}
+    - target: {fileID: 5208756847167429420, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: 'NetworkBehaviours.Array.data[0]'
+      value: 
+      objectReference: {fileID: 5001331200970937790}
+    - target: {fileID: 5208756847167429420, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: 'NetworkBehaviours.Array.data[1]'
+      value: 
+      objectReference: {fileID: 3965889134749287031}
+    - target: {fileID: 5232737888222145684, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: field of view
+      value: 65.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5232737888222145684, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: near clip plane
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6032351035555355589, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: _componentIndexCache
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7841080730049154467, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+      propertyPath: m_Cameras.Array.size
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8829994740536057978, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -434,6 +486,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26b716c41e9b56b4baafaf13a523ba2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &3965889134749287031 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6032351035555355589, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
+  m_PrefabInstance: {fileID: 7259411627339717042}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7641890751393015498}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6a39c46bf52104ba8efe3100bce3f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &7641890751393015498 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1059453463650582392, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
@@ -451,9 +514,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f93802da15628046b287fba4bd4e66f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 255
+  _componentIndexCache: 0
   _addedNetworkObject: {fileID: 3240239502154842782}
-  _networkObjectCache: {fileID: 0}
-  tankPrefab: {fileID: 5870096989387704085, guid: 9e46ca7f523d2cf4f93430ce136393fb, type: 3}
+  _networkObjectCache: {fileID: 3240239502154842782}
+  tankPrefab: {fileID: -2165462049478422040, guid: 9e46ca7f523d2cf4f93430ce136393fb, type: 3}
   spectatorCamera: {fileID: 0}
   respawnCanvas: {fileID: 3256117434175799841}

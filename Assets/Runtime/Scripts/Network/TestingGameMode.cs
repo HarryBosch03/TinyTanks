@@ -13,21 +13,19 @@ namespace TinyTanks.Network
 {
     public class TestingGameMode : NetworkBehaviour
     {
-        public TankController tankPrefab;
+        public TankInput tankPrefab;
         public CinemachineCamera spectatorCamera;
         public Canvas respawnCanvas;
-        
+
         private NetworkManager netManager;
 
-        public List<TankController> players { get; } = new List<TankController>();
-        public TankController localPlayer { get; private set; }
-        
-        public void RespawnPlayer() => RespawnPlayerRpc();
+        public List<TankInput> players { get; } = new List<TankInput>();
+        public TankInput localPlayer { get; private set; }
 
-        private void Awake()
-        {
-            respawnCanvas.gameObject.SetActive(false);
-        }
+        public void RespawnPlayer() => RespawnPlayer(-1);
+        public void RespawnPlayer(int controllerIndex) => RespawnPlayerRpc(controllerIndex);
+
+        private void Awake() { respawnCanvas.gameObject.SetActive(false); }
 
         public override void OnStartNetwork()
         {
@@ -35,58 +33,65 @@ namespace TinyTanks.Network
             ShowRespawnScreen(true);
         }
 
-        private void ShowRespawnScreen(bool show)
-        {
-            respawnCanvas.gameObject.SetActive(show);
-        }
+        private void ShowRespawnScreen(bool show) { respawnCanvas.gameObject.SetActive(show); }
 
         private void Update()
         {
             if (respawnCanvas.gameObject.activeSelf)
             {
-                var gp = Gamepad.current;
-                if (gp != null && gp.buttonSouth.wasPressedThisFrame)
+                for (var i = 0; i < Gamepad.all.Count; i++)
                 {
-                    RespawnPlayer();
+                    var gp = Gamepad.all[i];
+                    if (gp != null && gp.buttonSouth.wasPressedThisFrame)
+                    {
+                        RespawnPlayer(i);
+                    }
+                }
+
+                var kb = Keyboard.current;
+                if (kb.spaceKey.wasPressedThisFrame)
+                {
+                    RespawnPlayer(-1);
                 }
             }
         }
 
         [ServerRpc(RequireOwnership = false)]
-        private void RespawnPlayerRpc(NetworkConnection connection = null)
+        private void RespawnPlayerRpc(int controllerIndex, NetworkConnection connection = null)
         {
             var tank = GetTankControllerForConnection(connection);
             if (tank == null)
             {
                 var instance = Instantiate(tankPrefab);
                 Spawn(instance.gameObject, connection);
-                
+
                 players.Add(instance);
-                SetLocalPlayer(connection, instance);
+                SetLocalPlayerRpc(connection, instance, controllerIndex);
             }
             else
             {
-                tank.SetActive(true);
+                tank.tank.SetActive(true);
             }
 
             NotifyRespawnRpc(connection);
         }
-        
+
         [TargetRpc]
         private void NotifyRespawnRpc(NetworkConnection connection)
         {
             respawnCanvas.gameObject.SetActive(false);
-            localPlayer.SetActiveViewer(true);
+            localPlayer.tank.SetActiveViewer(true);
         }
 
         [TargetRpc]
-        private void SetLocalPlayer(NetworkConnection connection, TankController instance)
+        private void SetLocalPlayerRpc(NetworkConnection connection, TankInput instance, int controllerIndex)
         {
             if (instance.Owner != LocalConnection) return;
             localPlayer = instance;
+            localPlayer.controllerIndex = controllerIndex;
         }
 
-        private TankController GetTankControllerForConnection(NetworkConnection connection)
+        private TankInput GetTankControllerForConnection(NetworkConnection connection)
         {
             foreach (var player in players)
             {

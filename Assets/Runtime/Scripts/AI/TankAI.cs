@@ -50,10 +50,10 @@ namespace TinyTanks.AI
                     tank.throttle = 0f;
                     tank.steering = 0f;
 
-                    var targetDirection = (target.physicsModel.turretMount.position - tank.physicsModel.gunPivot.position).normalized;
+                    var targetDirection = (target.model.turretMount.position - tank.model.gunPivot.position).normalized;
                     MoveTurretTowards(targetDirection);
 
-                    if (Mathf.Acos(Vector3.Dot(targetDirection, tank.physicsModel.gunPivot.forward)) * Mathf.Rad2Deg < 1f)
+                    if (Mathf.Acos(Vector3.Dot(targetDirection, tank.model.gunPivot.forward)) * Mathf.Rad2Deg < 1f)
                     {
                         targetAcquisitionTimer += Time.deltaTime;
                     }
@@ -91,7 +91,7 @@ namespace TinyTanks.AI
 
         private bool CanSeeTarget()
         {
-            var ray = new Ray(tank.physicsModel.turretMount.position, (target.physicsModel.turretMount.position - tank.physicsModel.turretMount.position).normalized);
+            var ray = new Ray(tank.model.turretMount.position, (target.model.turretMount.position - tank.model.turretMount.position).normalized);
             var query = Physics.RaycastAll(ray);
 
             var bestHit = (RaycastHit?)null;
@@ -114,7 +114,7 @@ namespace TinyTanks.AI
             var orientation = Quaternion.LookRotation(tank.transform.InverseTransformVector(targetDirection).normalized, tank.transform.up);
             var rotation = new Vector2(orientation.eulerAngles.y, -orientation.eulerAngles.x);
 
-            tank.turretDelta = new Vector2
+            tank.turretTraverse = new Vector2
             {
                 x = Mathf.MoveTowardsAngle(tank.turretRotation.x, rotation.x, maxTurretDelta * Time.fixedDeltaTime),
                 y = Mathf.MoveTowardsAngle(tank.turretRotation.y, rotation.y, maxTurretDelta * Time.fixedDeltaTime),

@@ -48,8 +48,8 @@ namespace TinyTanks.Tanks
             var index = Array.IndexOf(tank.weapons, this);
             muzzle = index switch
             {
-                0 => tank.physicsModel.gunMuzzle,
-                1 => tank.physicsModel.coaxMuzzle,
+                0 => tank.model.gunMuzzle,
+                1 => tank.model.coaxMuzzle,
                 _ => throw new ArgumentOutOfRangeException()
             };
         }
