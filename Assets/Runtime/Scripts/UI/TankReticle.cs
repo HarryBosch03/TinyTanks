@@ -1,7 +1,5 @@
-using System;
 using TinyTanks.Tanks;
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
 
 namespace TinyTanks.UI
 {
@@ -9,11 +7,11 @@ namespace TinyTanks.UI
     [RequireComponent(typeof(RectTransform))]
     public class TankReticle : MonoBehaviour
     {
-        public ScriptableRendererFeature scopeFeature;
+        public FullScreenPassRendererFeature scopeFeature;
         public float offsetSmoothing = 0.1f;
 
-        private float offset;
-        private float smoothedOffset;
+        private Vector2 offset;
+        private Vector2 smoothedOffset;
         
         private TankController tank;
         private Camera mainCamera;
@@ -27,7 +25,6 @@ namespace TinyTanks.UI
         private void OnEnable()
         {
             if (scopeFeature != null) scopeFeature.SetActive(true);
-            smoothedOffset = transform.position.y;
         }
 
         private void OnDisable()
@@ -35,15 +32,14 @@ namespace TinyTanks.UI
             if (scopeFeature != null) scopeFeature.SetActive(false);
         }
 
-        private void FixedUpdate()
-        {
-            offset = mainCamera.WorldToScreenPoint(tank.sightAimPoint).y;
-        }
-
         private void LateUpdate()
         {
-            smoothedOffset = Mathf.Lerp(smoothedOffset, offset, Time.deltaTime / Mathf.Max(Time.deltaTime, offsetSmoothing));
-            transform.position = new Vector3(transform.position.x, smoothedOffset, transform.position.z);
+            if (!tank.isActiveViewer) return;
+            
+            offset = mainCamera.WorldToScreenPoint(tank.transform.position + tank.model.gunMuzzle.forward * 1024f);
+            smoothedOffset = Vector2.Lerp(smoothedOffset, offset, Time.deltaTime / Mathf.Max(Time.deltaTime, offsetSmoothing));
+            transform.position = new Vector3(smoothedOffset.x, smoothedOffset.y, transform.position.z);
+            scopeFeature.passMaterial.SetVector("_Offset", smoothedOffset - new Vector2(Screen.width, Screen.height) / 2f);
         }
     }
 }

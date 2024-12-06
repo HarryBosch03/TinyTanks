@@ -11,24 +11,16 @@ namespace TinyTanks.Tanks
     {
         public TankController target;
         public Vector3 offset;
-        public bool followTankRotation;
         
         [HideInInspector]
-        public float rotationOffset;
+        public Vector2 freeLookRotation;
         
         public override void MutateCameraState(ref CameraState curState, float deltaTime)
         {
             var targetTransform = target.NetworkObject.GetGraphicalObject();
             if (targetTransform == null) targetTransform = target.transform;
-            
-            var angle = rotationOffset;
-            if (followTankRotation)
-            {
-                var fwd = Vector3.ProjectOnPlane(targetTransform.forward, Vector3.up).normalized;
-                angle += Mathf.Atan2(fwd.x, fwd.z) * Mathf.Rad2Deg;
-            }
 
-            var orientation = Quaternion.Euler(Vector3.up * angle);
+            var orientation = Quaternion.Euler(-freeLookRotation.y, freeLookRotation.x, 0f);
             
             curState.RawPosition = targetTransform.position + orientation * offset;
             curState.RawOrientation = orientation;

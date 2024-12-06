@@ -96,6 +96,7 @@ RectTransform:
   - {fileID: 586693722023654005}
   - {fileID: 2381477257622882708}
   - {fileID: 2178153872239935757}
+  - {fileID: 8871656955955550185}
   m_Father: {fileID: 3743516465572591193}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -5260,6 +5261,7 @@ Transform:
   - {fileID: 2999207498537964247}
   - {fileID: 8083998691846816127}
   - {fileID: 2253555008886437823}
+  - {fileID: 957767069359485035}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &-2165462049478422040
@@ -5278,7 +5280,10 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 7126151532150611289}
   _networkObjectCache: {fileID: 7126151532150611289}
   controllerIndex: 0
-  mouseSensitivity: 0.01
+  mouseCameraSensitivity: 0.3
+  mouseTraverseSensitivity: 0.01
+  gamepadSensitivity: 1
+  cursor: {fileID: 8871656955955550185}
 --- !u!114 &5870096989387704085
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5324,8 +5329,9 @@ MonoBehaviour:
   brakeTime: 0.8
   xFriction: 0.4
   moveTilt: 0.2
-  maxTraverseSpeed: 20
-  traverseAccelerationTime: 0.1
+  maxTraverseSpeed: 60
+  traverseSpeedSpring: 200
+  traverseSpeedDamping: 20
   maxTurnSpeed: 2
   turnAccelerationTime: 0.1
   suspensionSpring: 30
@@ -5408,6 +5414,8 @@ MonoBehaviour:
   - {fileID: -2165462049478422040}
   - {fileID: 5870096989387704085}
   - {fileID: 4501254151424924563}
+  - {fileID: 4605321825353068171}
+  - {fileID: 1325806242802492633}
   - {fileID: 5445878091582060204}
   - {fileID: 4274865971560376412}
   - {fileID: 1871125203858546312}
@@ -5430,7 +5438,7 @@ MonoBehaviour:
   NetworkObserver: {fileID: 0}
   _enablePrediction: 1
   _predictionType: 1
-  _graphicalObject: {fileID: 0}
+  _graphicalObject: {fileID: 957767069359485035}
   _detachGraphicalObject: 0
   _enableStateForwarding: 1
   _networkTransform: {fileID: 0}
@@ -5628,6 +5636,81 @@ Transform:
   - {fileID: 5224283526422719428}
   m_Father: {fileID: 6849040294163171520}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1469991975990223363
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8871656955955550185}
+  - component: {fileID: 8337404974259146665}
+  - component: {fileID: 539212818207871466}
+  m_Layer: 0
+  m_Name: Dot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &8871656955955550185
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1469991975990223363}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 942439298867438275}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 848, y: 428}
+  m_SizeDelta: {x: 4, y: 4}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &8337404974259146665
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1469991975990223363}
+  m_CullTransparentMesh: 1
+--- !u!114 &539212818207871466
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1469991975990223363}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.5019608}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &1471593239999987142
 GameObject:
   m_ObjectHideFlags: 0
@@ -5748,6 +5831,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0049529a44c44e92900d7fc70edec647, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 4
+  _addedNetworkObject: {fileID: 7126151532150611289}
+  _networkObjectCache: {fileID: 7126151532150611289}
   displayName: Coax
   icon: {fileID: 21300000, guid: a8248648f3b68c94b85b36971f7093dc, type: 3}
   projectile: {fileID: 2848336949314863663, guid: da5ea41f8fbfc9f4184cb5ae8e8f8468, type: 3}
@@ -10670,6 +10756,37 @@ ParticleSystemRenderer:
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
   m_MaskInteraction: 0
+--- !u!1 &2002303838956667021
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 957767069359485035}
+  m_Layer: 0
+  m_Name: Lerp Target
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &957767069359485035
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2002303838956667021}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3743516465572591193}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2066558421745404041
 GameObject:
   m_ObjectHideFlags: 0
@@ -10784,7 +10901,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 7
+  _componentIndexCache: 9
   _addedNetworkObject: {fileID: 7126151532150611289}
   _networkObjectCache: {fileID: 7126151532150611289}
   maxHealth: 20
@@ -10905,7 +11022,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 8
+  _componentIndexCache: 10
   _addedNetworkObject: {fileID: 7126151532150611289}
   _networkObjectCache: {fileID: 7126151532150611289}
   maxHealth: 20
@@ -11026,7 +11143,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 4
+  _componentIndexCache: 6
   _addedNetworkObject: {fileID: 7126151532150611289}
   _networkObjectCache: {fileID: 7126151532150611289}
   maxHealth: 20
@@ -11107,7 +11224,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 10
+  _componentIndexCache: 12
   _addedNetworkObject: {fileID: 7126151532150611289}
   _networkObjectCache: {fileID: 7126151532150611289}
   maxHealth: 20
@@ -11390,6 +11507,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0049529a44c44e92900d7fc70edec647, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 3
+  _addedNetworkObject: {fileID: 7126151532150611289}
+  _networkObjectCache: {fileID: 7126151532150611289}
   displayName: 120mm Cannon
   icon: {fileID: 21300000, guid: 772b9e5795f19e347b5e765f9a9ad88e, type: 3}
   projectile: {fileID: 5331638167734849736, guid: 7d9f04090572f1b4992b290da71ec78d, type: 3}
@@ -11511,8 +11631,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 5870096989387704085}
   offset: {x: 0, y: 0.8, z: -2}
-  followTankRotation: 1
-  rotationOffset: 0
+  freeLookRotation: {x: 0, y: 0}
 --- !u!1 &4512759503610450185
 GameObject:
   m_ObjectHideFlags: 0
@@ -17071,7 +17190,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 5
+  _componentIndexCache: 7
   _addedNetworkObject: {fileID: 7126151532150611289}
   _networkObjectCache: {fileID: 7126151532150611289}
   maxHealth: 20
@@ -17192,7 +17311,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 9
+  _componentIndexCache: 11
   _addedNetworkObject: {fileID: 7126151532150611289}
   _networkObjectCache: {fileID: 7126151532150611289}
   maxHealth: 20
@@ -17454,7 +17573,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 3
+  _componentIndexCache: 5
   _addedNetworkObject: {fileID: 7126151532150611289}
   _networkObjectCache: {fileID: 7126151532150611289}
   maxHealth: 20
@@ -17575,7 +17694,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 6
+  _componentIndexCache: 8
   _addedNetworkObject: {fileID: 7126151532150611289}
   _networkObjectCache: {fileID: 7126151532150611289}
   maxHealth: 20

@@ -62,8 +62,6 @@ namespace TinyTanks.AI
                         targetAcquisitionTimer = 0f;
                     }
 
-                    tank.SetStabs(true);
-
                     if (targetAcquisitionTimer >= targetAcquisitionTime)
                     {
                         tank.StartShooting(0);
@@ -79,7 +77,6 @@ namespace TinyTanks.AI
                     tank.steering = Vector3.Dot(Vector3.Cross(tank.transform.forward, vector.normalized), tank.transform.up);
                     tank.throttle = Vector3.Dot(vector.normalized, tank.transform.forward) * Mathf.Clamp(vector.magnitude / corneringDistance, 0.2f, 1f);
 
-                    tank.SetStabs(false);
                     MoveTurretTowards(tank.transform.forward);
                     
                     tank.StopShooting(0);
@@ -113,12 +110,6 @@ namespace TinyTanks.AI
         {
             var orientation = Quaternion.LookRotation(tank.transform.InverseTransformVector(targetDirection).normalized, tank.transform.up);
             var rotation = new Vector2(orientation.eulerAngles.y, -orientation.eulerAngles.x);
-
-            tank.turretTraverse = new Vector2
-            {
-                x = Mathf.MoveTowardsAngle(tank.turretRotation.x, rotation.x, maxTurretDelta * Time.fixedDeltaTime),
-                y = Mathf.MoveTowardsAngle(tank.turretRotation.y, rotation.y, maxTurretDelta * Time.fixedDeltaTime),
-            } - tank.turretRotation;
         }
 
         private void OnDrawGizmos()

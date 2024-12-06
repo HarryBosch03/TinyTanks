@@ -25,7 +25,6 @@ namespace TinyTanks.Tanks
                 }
                 
                 tank.steering = spin ? 1f : 0f;
-                tank.SetStabs(true);
             }
         }
     }

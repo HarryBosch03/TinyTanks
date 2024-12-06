@@ -39,7 +39,7 @@ namespace TinyTanks.Tanks
             alignmentTurret.rotation = Quaternion.Euler(0f, 0f, cameraAngle - turretAngle);
 
             var fwdSpeedKmph = Mathf.Abs(Vector3.Dot(tank.body.linearVelocity, tank.transform.forward)) * 3.6f;
-            infoText.text = $"{fwdSpeedKmph:0}km/h\nStabs: {(tank.stabsEnabled? "On" : "Off")}";
+            infoText.text = $"{fwdSpeedKmph:0}km/h";
         }
     }
 }

@@ -1,13 +1,17 @@
 using System;
 using FishNet;
 using FishNet.Managing.Timing;
+using FishNet.Object;
+using FishNet.Object.Prediction;
+using FishNet.Transporting;
 using TinyTanks.Health;
 using TinyTanks.Projectiles;
 using UnityEngine;
 
 namespace TinyTanks.Tanks
 {
-    public class TankWeapon : MonoBehaviour
+    [DefaultExecutionOrder(-50)]
+    public class TankWeapon : NetworkBehaviour
     {
         public string displayName;
         public Sprite icon;
@@ -23,15 +27,13 @@ namespace TinyTanks.Tanks
 
         private Rigidbody body;
         private TankController tank;
-        private float startReloadTime;
 
         public event Action WeaponFiredEvent;
 
         public Transform muzzle { get; private set; }
         public bool shooting { get; private set; }
         public TimeManager timeManager => InstanceFinder.TimeManager;
-        public float serverTime => (float)timeManager.TicksToTime(timeManager.Tick);
-        public float reloadTimer => startReloadTime + fireDelay - serverTime;
+        public float reloadTimer { get; private set; }
         public bool isReloading => reloadTimer > 0f;
         public float reloadPercent => 1f - reloadTimer / fireDelay;
 
@@ -41,6 +43,46 @@ namespace TinyTanks.Tanks
             tank = GetComponentInParent<TankController>();
             if (string.IsNullOrEmpty(displayName)) displayName = name;
 
+        }
+
+        public override void OnStartNetwork()
+        {
+            TimeManager.OnTick += OnTick;
+        }
+
+        public override void OnStopNetwork()
+        {
+            TimeManager.OnTick -= OnTick;
+        }
+
+        private void OnTick()
+        {
+            RunInputs(CreateReplicateData());
+            CreateReconcile();
+        }
+
+        public override void CreateReconcile()
+        {
+            var data = new ReconcileData();
+            data.reloadTimer = reloadTimer;
+
+            ReconcileState(data);
+        }
+
+        [Reconcile]
+        private void ReconcileState(ReconcileData data, Channel channel = Channel.Unreliable)
+        {
+            reloadTimer = data.reloadTimer;
+        }
+
+        private ReplicateData CreateReplicateData()
+        {
+            var data = new ReplicateData()
+            {
+                shooting = shooting,
+            };
+
+            return data;
         }
 
         private void Start()
@@ -59,26 +101,34 @@ namespace TinyTanks.Tanks
             this.shooting = shooting;
         }
 
-        private void FixedUpdate()
+        [Replicate]
+        private void RunInputs(ReplicateData data, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
         {
-            if (shooting && reloadTimer <= 0f)
-            {
-                var instance = Instantiate(projectile, muzzle.position, muzzle.rotation);
-
-                instance.shooter = tank.NetworkObject;
-                instance.damage = damage;
-                instance.startSpeed = projectileSpeed;
+            Debug.Log($"Frame: {data.GetTick()} || 1");
             
-                instance.velocity += body.GetPointVelocity(muzzle.position);
-                startReloadTime = serverTime;
+            if (data.shooting && reloadTimer <= 0f)
+            {
+                if (state == ReplicateState.CurrentCreated)
+                {
+                    var instance = Instantiate(projectile, muzzle.position, muzzle.rotation);
+                
+                    instance.shooter = tank.NetworkObject;
+                    instance.damage = damage;
+                    instance.startSpeed = projectileSpeed;
+                
+                    instance.velocity += body.GetPointVelocity(muzzle.position);
+                    WeaponFiredEvent?.Invoke();
+                }
+                reloadTimer = fireDelay;
 
-                body.AddForceAtPosition(-muzzle.forward * recoilForce, muzzle.position, ForceMode.VelocityChange);
-                WeaponFiredEvent?.Invoke();
-
-                if (fireFx != null && (!tank.isActiveViewer || !tank.sightCamera)) fireFx.Play(true);
+                tank.predictionBody.AddForceAtPosition(-muzzle.forward * recoilForce, muzzle.position, ForceMode.VelocityChange);
+                
+                if (fireFx != null && !(tank.isActiveViewer && tank.sightCamera)) fireFx.Play(true);
                 
                 if (!automatic) shooting = false;
             }
+
+            reloadTimer -= Time.fixedDeltaTime;
         }
         
         public Vector3 PredictProjectileArc()
@@ -106,6 +156,29 @@ namespace TinyTanks.Tanks
             }
 
             return muzzle.position + muzzle.forward * 500f;
+        }
+        
+        
+        public struct ReconcileData : IReconcileData
+        {
+            public float reloadTimer;
+
+            private uint tick;
+
+            public uint GetTick() => tick;
+            public void SetTick(uint value) => tick = value;
+            public void Dispose() { }
+        }
+
+        public struct ReplicateData : IReplicateData
+        {
+            public bool shooting;
+
+            private uint tick;
+
+            public uint GetTick() => tick;
+            public void SetTick(uint value) => tick = value;
+            public void Dispose() { }
         }
     }
 }
