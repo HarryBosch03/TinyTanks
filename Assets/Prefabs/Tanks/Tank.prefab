@@ -11521,7 +11521,7 @@ MonoBehaviour:
     ricochetAngle: 60
   projectileSpeed: 600
   recoilForce: 3
-  automatic: 0
+  automatic: 1
   fireFx: {fileID: 3831729359184097159}
 --- !u!114 &5333391717847674271
 MonoBehaviour:

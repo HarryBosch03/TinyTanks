@@ -10,7 +10,6 @@ using UnityEngine;
 
 namespace TinyTanks.Tanks
 {
-    [DefaultExecutionOrder(-50)]
     public class TankWeapon : NetworkBehaviour
     {
         public string displayName;
@@ -27,13 +26,12 @@ namespace TinyTanks.Tanks
 
         private Rigidbody body;
         private TankController tank;
+        private float reloadTimer;
 
         public event Action WeaponFiredEvent;
 
         public Transform muzzle { get; private set; }
         public bool shooting { get; private set; }
-        public TimeManager timeManager => InstanceFinder.TimeManager;
-        public float reloadTimer { get; private set; }
         public bool isReloading => reloadTimer > 0f;
         public float reloadPercent => 1f - reloadTimer / fireDelay;
 
@@ -77,11 +75,15 @@ namespace TinyTanks.Tanks
 
         private ReplicateData CreateReplicateData()
         {
+            if (!IsOwner) return default;
+
             var data = new ReplicateData()
             {
                 shooting = shooting,
             };
 
+            if (!automatic) shooting = false;
+            
             return data;
         }
 
@@ -104,9 +106,7 @@ namespace TinyTanks.Tanks
         [Replicate]
         private void RunInputs(ReplicateData data, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
         {
-            Debug.Log($"Frame: {data.GetTick()} || 1");
-            
-            if (data.shooting && reloadTimer <= 0f)
+            if (data.shooting && !isReloading)
             {
                 if (state == ReplicateState.CurrentCreated)
                 {
@@ -119,13 +119,11 @@ namespace TinyTanks.Tanks
                     instance.velocity += body.GetPointVelocity(muzzle.position);
                     WeaponFiredEvent?.Invoke();
                 }
-                reloadTimer = fireDelay;
 
-                tank.predictionBody.AddForceAtPosition(-muzzle.forward * recoilForce, muzzle.position, ForceMode.VelocityChange);
+                reloadTimer = fireDelay;
+                //tank.predictionBody.AddForceAtPosition(-muzzle.forward * recoilForce, muzzle.position, ForceMode.VelocityChange);
                 
                 if (fireFx != null && !(tank.isActiveViewer && tank.sightCamera)) fireFx.Play(true);
-                
-                if (!automatic) shooting = false;
             }
 
             reloadTimer -= Time.fixedDeltaTime;

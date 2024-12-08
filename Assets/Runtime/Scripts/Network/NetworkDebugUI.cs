@@ -1,4 +1,7 @@
+using System;
 using FishNet;
+using FishNet.Managing;
+using Unity.Multiplayer.Playmode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -6,6 +9,21 @@ namespace TinyTanks.Network
 {
     public class NetworkDebugUI : MonoBehaviour
     {
+        private void Start()
+        {
+            var mpmTags = CurrentPlayer.ReadOnlyTags();
+            var networkManager = InstanceFinder.NetworkManager;
+
+            if (Array.Exists(mpmTags, e => e == "Host"))
+            {
+                StartHost();
+            }
+            else if (Array.Exists(mpmTags, e => e == "Client"))
+            {
+                StartClient();
+            }
+        }
+
         private void Update()
         {
             if (!InstanceFinder.ClientManager.Started && !InstanceFinder.ServerManager.Started)

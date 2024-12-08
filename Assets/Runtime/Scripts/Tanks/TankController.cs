@@ -164,8 +164,6 @@ namespace TinyTanks.Tanks
         [Replicate]
         private void RunInputs(ReplicateData data, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
         {
-            Debug.Log($"Frame: {data.GetTick()} || 2");
-
             if (state.IsFuture())
             {
                 data = lastValidReplicateData;
