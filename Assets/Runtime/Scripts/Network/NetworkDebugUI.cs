@@ -26,7 +26,10 @@ namespace TinyTanks.Network
 
         private void Update()
         {
-            if (!InstanceFinder.ClientManager.Started && !InstanceFinder.ServerManager.Started)
+            var serverManager = InstanceFinder.ServerManager;
+            var clientManager = InstanceFinder.ClientManager;
+            
+            if (!serverManager.Started && !clientManager.Started)
             {
                 var gp = Gamepad.current;
                 if (gp != null && Application.isFocused)
@@ -48,7 +51,20 @@ namespace TinyTanks.Network
         {
             using (new GUILayout.AreaScope(new Rect(20, 20, 150, Screen.height - 40)))
             {
-                if (!InstanceFinder.ClientManager.Started && !InstanceFinder.ServerManager.Started)
+                var serverManager = InstanceFinder.ServerManager;
+                var clientManager = InstanceFinder.ClientManager;
+                var timeManager = InstanceFinder.TimeManager;
+
+                if (serverManager.Started)
+                {
+                    
+                }
+                else if (clientManager.Started)
+                {
+                    var ping = timeManager.RoundTripTime;
+                    GUILayout.Label($"Ping: {ping}");
+                }
+                else if (!InstanceFinder.ClientManager.Started && !InstanceFinder.ServerManager.Started)
                 {
                     if (GUILayout.Button("Start Host [RS]"))
                     {

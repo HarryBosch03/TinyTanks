@@ -145,7 +145,13 @@ namespace TinyTanks.Tanks
             TimeManager.OnPostTick -= OnPostTick;
         }
 
-        private void OnTick() { RunInputs(CreateReplicateData()); }
+        private void OnTick()
+        {
+            model.transform.position = transform.position;
+            model.transform.rotation = transform.rotation;
+            
+            RunInputs(CreateReplicateData());
+        }
 
         private ReplicateData CreateReplicateData()
         {
@@ -356,9 +362,17 @@ namespace TinyTanks.Tanks
         private void Update()
         {
             AlignSight();
-            
+
             model.turretMount.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
             model.gunPivot.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
+        }
+
+        private void LateUpdate()
+        {
+            var graphicalObject = NetworkObject.GetGraphicalObject();
+            if (graphicalObject == null) graphicalObject = transform;
+            model.transform.position = graphicalObject.position;
+            model.transform.rotation = graphicalObject.rotation;
         }
 
         private void AlignSight()

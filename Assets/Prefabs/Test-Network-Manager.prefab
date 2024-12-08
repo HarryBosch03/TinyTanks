@@ -120,6 +120,6 @@ MonoBehaviour:
   _latencySimulator:
     _enabled: 1
     _simulateHost: 1
-    _latency: 80
+    _latency: 0
     _outOfOrder: 0
     _packetLoss: 0
