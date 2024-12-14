@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -8,7 +9,7 @@ namespace TinyTanks.Tanks
     [SelectionBase]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(TankController))]
-    public class TankInput : MonoBehaviour
+    public class TankInput : NetworkBehaviour
     {
         public int controllerIndex;
         public float mouseCameraSensitivity;
@@ -16,6 +17,7 @@ namespace TinyTanks.Tanks
         public float gamepadSensitivity;
         public RectTransform cursor;
 
+        private Vector2 cameraRotation;
         private Vector2 cursorPosition;
         private Camera mainCamera;
         private CinemachineTankFollowCamera followCamera;
@@ -29,22 +31,29 @@ namespace TinyTanks.Tanks
             mainCamera = Camera.main;
         }
 
-        private void OnEnable()
+        public override void OnNetworkSpawn()
         {
-            Cursor.lockState = CursorLockMode.Locked;
+            if (IsOwner)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+            }
         }
 
-        private void OnDisable()
+        public override void OnNetworkDespawn()
         {
-            Cursor.lockState = CursorLockMode.None;
+            if (IsOwner)
+            {
+                Cursor.lockState = CursorLockMode.None;
+            }
         }
 
         private void Update()
         {
-            if (Application.isFocused)
+            if (Application.isFocused && IsOwner)
             {
                 var cursorDelta = Vector2.zero;
                 var gp = Gamepad.all.ElementAtOrDefault(controllerIndex);
+                
                 if (controllerIndex == -1)
                 {
                     var kb = Keyboard.current;
@@ -61,7 +70,7 @@ namespace TinyTanks.Tanks
 
                     if (kb.leftShiftKey.wasPressedThisFrame) tank.SetUseSight(!tank.useSight);
 
-                    cursorDelta = Mouse.current.delta.ReadValue();
+                    cursorDelta = Mouse.current.delta.ReadValue() * mouseCameraSensitivity;
                 }
                 else if (gp != null)
                 {
@@ -78,30 +87,16 @@ namespace TinyTanks.Tanks
                     if (gp.buttonSouth.wasPressedThisFrame) tank.SetUseSight(!tank.useSight);
                 }
 
-                var aimPosition = mainCamera.transform.position + tank.worldAimVector * 1024f;
-                var targetCursorPosition = (Vector2)mainCamera.WorldToScreenPoint(aimPosition);
-                targetCursorPosition += cursorDelta;
-                targetCursorPosition.x = Mathf.Clamp(targetCursorPosition.x, 0, Screen.width);
-                targetCursorPosition.y = Mathf.Clamp(targetCursorPosition.y, 0, Screen.height);
+                var sensitivityScaling = Mathf.Tan(mainCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
+                cameraRotation += cursorDelta * sensitivityScaling;
 
-                var currentCursorPosition = (Vector2)mainCamera.WorldToScreenPoint(mainCamera.transform.position + tank.model.gunPivot.forward * 1024f);
-                currentCursorPosition.x = Mathf.Clamp(currentCursorPosition.x, 0, Screen.width);
-                currentCursorPosition.y = Mathf.Clamp(currentCursorPosition.y, 0, Screen.height);
+                cameraRotation.x %= 360f;
+                cameraRotation.y = Mathf.Clamp(cameraRotation.y, -90f, 90f);
                 
-                if (tank.useSight)
-                {
-                    var screenSize = new Vector2(Screen.width, Screen.height) / 2f;
-                    targetCursorPosition = Vector2.ClampMagnitude((targetCursorPosition - currentCursorPosition) / screenSize, 0.5f) * screenSize + currentCursorPosition;
-                }
+                tank.worldAimVector = Quaternion.Euler(-cameraRotation.y, cameraRotation.x, 0f) * Vector3.forward;
+                followCamera.freeLookRotation = cameraRotation;
 
-                cursorPosition = targetCursorPosition;
-                
-                var ray = mainCamera.ScreenPointToRay(targetCursorPosition);
-                aimPosition = ray.GetPoint(50f);
-                tank.worldAimVector = (aimPosition - mainCamera.transform.position).normalized;
-
-                var camOrientation = Quaternion.LookRotation(tank.worldAimVector, Vector3.up).eulerAngles;
-                followCamera.freeLookRotation = new Vector2(camOrientation.y, -camOrientation.x);
+                cursorPosition = mainCamera.WorldToScreenPoint(mainCamera.transform.position + tank.worldAimVector);
             }
 
             cursor.gameObject.SetActive(true);

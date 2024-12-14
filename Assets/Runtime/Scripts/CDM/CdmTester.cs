@@ -3,11 +3,15 @@ using UnityEngine;
 
 namespace TinyTanks.CDM
 {
-    [ExecuteAlways]
     public class CdmTester : MonoBehaviour
     {
         public DamageInstance damage;
-        
+
+        private void Awake()
+        {
+            if (Application.isPlaying) Destroy(gameObject);
+        }
+
         private void OnDrawGizmos()
         {
             var ray = new Ray(transform.position, transform.forward);

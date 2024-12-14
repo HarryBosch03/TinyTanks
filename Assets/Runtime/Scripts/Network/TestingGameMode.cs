@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using TinyTanks.Tanks;
 using Unity.Cinemachine;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace TinyTanks.Network
 {
-    public class TestingGameMode : MonoBehaviour
+    public class TestingGameMode : NetworkBehaviour
     {
         public TankInput tankPrefab;
         public CinemachineCamera spectatorCamera;
@@ -17,14 +18,11 @@ namespace TinyTanks.Network
         public TankInput localPlayer { get; private set; }
 
         public void RespawnPlayer() => RespawnPlayer(-1);
-        public void RespawnPlayer(int controllerIndex) => RespawnPlayerRpc(controllerIndex);
+        public void RespawnPlayer(int controllerIndex) => RespawnPlayerServerRpc(controllerIndex);
 
         private void Awake() { respawnCanvas.gameObject.SetActive(false); }
 
-        private void OnEnable()
-        {
-            ShowRespawnScreen(true);
-        }
+        private void OnEnable() { ShowRespawnScreen(true); }
 
         private void ShowRespawnScreen(bool show) { respawnCanvas.gameObject.SetActive(show); }
 
@@ -49,41 +47,54 @@ namespace TinyTanks.Network
             }
         }
 
-        private void RespawnPlayerRpc(int controllerIndex)
+        [ServerRpc(RequireOwnership = false)]
+        private void RespawnPlayerServerRpc(int controllerIndex, ServerRpcParams rpcParams = default)
         {
-            var tank = GetTankControllerForConnection();
+            var replyParams = new ClientRpcParams()
+            {
+                Send = new ClientRpcSendParams
+                {
+                    TargetClientIds = new[] { rpcParams.Receive.SenderClientId }
+                }
+            };
+            
+            var tank = GetTankControllerForConnection(rpcParams.Receive.SenderClientId);
             if (tank == null)
             {
                 var instance = Instantiate(tankPrefab);
+                instance.NetworkObject.SpawnWithOwnership(rpcParams.Receive.SenderClientId, true);
 
                 players.Add(instance);
-                SetLocalPlayerRpc(instance, controllerIndex);
+                SetLocalPlayerClientRpc(instance.NetworkObject, controllerIndex, replyParams);
             }
             else
             {
                 tank.tank.SetActive(true);
             }
 
-            NotifyRespawnRpc();
+            NotifyRespawnClientRpc(replyParams);
         }
 
-        private void NotifyRespawnRpc()
+        [ClientRpc]
+        private void NotifyRespawnClientRpc(ClientRpcParams sendParams = default)
         {
             respawnCanvas.gameObject.SetActive(false);
             localPlayer.tank.SetActiveViewer(true);
         }
 
-        private void SetLocalPlayerRpc(TankInput instance, int controllerIndex)
+        [ClientRpc]
+        private void SetLocalPlayerClientRpc(NetworkObjectReference reference, int controllerIndex, ClientRpcParams target = default)
         {
-            localPlayer = instance;
+            reference.TryGet(out var networkObject);
+            localPlayer = networkObject.GetComponent<TankInput>();
             localPlayer.controllerIndex = controllerIndex;
         }
 
-        private TankInput GetTankControllerForConnection()
+        private TankInput GetTankControllerForConnection(ulong clientId)
         {
             foreach (var player in players)
             {
-                return player;
+                if (clientId == player.OwnerClientId) return player;
             }
 
             return null;

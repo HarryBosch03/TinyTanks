@@ -1,10 +1,11 @@
 using System;
 using TinyTanks.Health;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace TinyTanks.CDM
 {
-    public class CdmComponent : MonoBehaviour
+    public class CdmComponent : NetworkBehaviour
     {
         public int maxHealth;
         public Color baseColor = Color.white;
@@ -55,6 +56,7 @@ namespace TinyTanks.CDM
 
         public void Damage(int damage)
         {
+            if (!IsServer) return;
             if (!Application.isPlaying) return;
             
             currentHealth -= damage;
@@ -63,6 +65,15 @@ namespace TinyTanks.CDM
                 currentHealth = 0;
                 destroyed = true;
             }
+
+            UpdateHealthClientRpc(currentHealth, destroyed);
+        }
+
+        [ClientRpc]
+        private void UpdateHealthClientRpc(int currentHealth, bool destroyed)
+        {
+            this.currentHealth = currentHealth;
+            this.destroyed = destroyed;
         }
 
         private void UpdateRenderers()

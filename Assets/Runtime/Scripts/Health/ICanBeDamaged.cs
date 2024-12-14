@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 
 namespace TinyTanks.Health
@@ -11,7 +12,7 @@ namespace TinyTanks.Health
         protected static void NotifyDamaged(GameObject victim, DamageInstance damage, DamageSource source, DamageReport report) => DamagedEvent?.Invoke(victim, damage, source, report);
         public static event System.Action<GameObject, DamageInstance, DamageSource, DamageReport> DamagedEvent;
 
-        public struct DamageReport
+        public struct DamageReport : INetworkSerializable
         {
             public bool canPenetrate;
             public Ray entryRay;
@@ -19,12 +20,22 @@ namespace TinyTanks.Health
             public Ray exitRay;
             public SpallReport[] spall;
 
-            public struct SpallReport
+            public struct SpallReport : INetworkSerializable
             {
+                public static readonly SpallReport None = new SpallReport { hitComponent = "", };
+
                 public Ray ray;
                 public bool didHit;
                 public Vector3 hit;
                 public string hitComponent;
+
+                public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+                {
+                    serializer.SerializeValue(ref ray);
+                    serializer.SerializeValue(ref didHit);
+                    serializer.SerializeValue(ref hit);
+                    serializer.SerializeValue(ref hitComponent);
+                }
             }
 
             public void DrawGizmos()
@@ -56,7 +67,7 @@ namespace TinyTanks.Health
             public void DebugDraw()
             {
                 if (!Application.isPlaying) return;
-                
+
                 Debug.DrawLine(entryRay.origin, exitRay.origin, Color.yellow, 5f);
                 Debug.DrawRay(exitRay.origin, exitRay.direction * 10f, Color.yellow, 5f);
 
@@ -74,6 +85,15 @@ namespace TinyTanks.Health
                         }
                     }
                 }
+            }
+
+            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+            {
+                serializer.SerializeValue(ref canPenetrate);
+                serializer.SerializeValue(ref entryRay);
+                serializer.SerializeValue(ref didRicochet);
+                serializer.SerializeValue(ref exitRay);
+                serializer.SerializeValue(ref spall);
             }
         }
     }

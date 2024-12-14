@@ -25,6 +25,8 @@ namespace TinyTanks.UI
         private void OnEnable()
         {
             if (scopeFeature != null) scopeFeature.SetActive(true);
+            offset = GetOffset();
+            smoothedOffset = offset;
         }
 
         private void OnDisable()
@@ -36,10 +38,21 @@ namespace TinyTanks.UI
         {
             if (!tank.isActiveViewer) return;
 
-            offset = mainCamera.WorldToScreenPoint(tank.model.gunPivot.position + tank.model.gunPivot.forward * tank.targetingRange);
+            offset = GetOffset();
             smoothedOffset = Vector2.Lerp(smoothedOffset, offset, Time.deltaTime / Mathf.Max(Time.deltaTime, offsetSmoothing));
             transform.position = new Vector3(smoothedOffset.x, smoothedOffset.y, transform.position.z);
             scopeFeature.passMaterial.SetVector("_Offset", smoothedOffset - new Vector2(Screen.width, Screen.height) / 2f);
+        }
+
+        private Vector2 GetOffset()
+        {
+            var traverseLeft = new Vector2()
+            {
+                x = Mathf.DeltaAngle(tank.turretTarget.x, tank.turretRotation.x),
+                y = Mathf.DeltaAngle(tank.turretTarget.y, tank.turretRotation.y),
+            };
+
+            return mainCamera.WorldToScreenPoint(mainCamera.transform.position + mainCamera.transform.rotation * Quaternion.Euler(-traverseLeft.y, traverseLeft.x, 0f) * Vector3.forward);
         }
     }
 }

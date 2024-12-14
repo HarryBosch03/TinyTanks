@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Cinemachine;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace TinyTanks.Tanks
 {
     [RequireComponent(typeof(Rigidbody))]
-    public class TankController : MonoBehaviour
+    public class TankController : NetworkBehaviour
     {
         public float maxFwdSpeed = 12f;
         public float maxReverseSpeed = 4f;
@@ -52,7 +53,7 @@ namespace TinyTanks.Tanks
 
         private bool changeUseSight;
         private bool onGround;
-        private Vector2 traverseVelocity;
+        private Vector2 turretVelocity;
 
         public float targetingRange { get; private set; }
         public Rigidbody body { get; private set; }
@@ -62,6 +63,7 @@ namespace TinyTanks.Tanks
         public float throttle { get; set; }
         public float steering { get; set; }
         public Vector2 turretRotation { get; private set; }
+        public Vector2 turretTarget { get; private set; }
         public Vector3 worldAimVector { get; set; }
         public bool isActiveViewer { get; private set; }
 
@@ -103,9 +105,12 @@ namespace TinyTanks.Tanks
 
         private void OnDisable() { all.Remove(this); }
 
-        public void SetActive(bool isActive)
+        public void SetActive(bool isActive) => SetActiveRpc(isActive);
+
+        [Rpc(SendTo.Everyone)]
+        private void SetActiveRpc(bool isActive)
         {
-            gameObject.SetActive(isActive); 
+            gameObject.SetActive(isActive);
         }
         
         public void SetActiveViewer(bool isActiveViewer)
@@ -117,6 +122,11 @@ namespace TinyTanks.Tanks
 
         private void FixedUpdate()
         {
+            if (IsOwner)
+            {
+                SendInputDataServerRpc(new InputData(this));
+            }
+            
             if (useSight != changeUseSight)
             {
                 useSight = changeUseSight;
@@ -129,6 +139,29 @@ namespace TinyTanks.Tanks
             AlignSight(worldAimVector);
 
             body.AddForce(Physics.gravity, ForceMode.Acceleration);
+
+            if (IsServer) SendNetworkStateClientRpc(new NetworkState(this));
+        }
+
+        [ServerRpc(Delivery = RpcDelivery.Unreliable)]
+        private void SendInputDataServerRpc(InputData input)
+        {
+            throttle = input.throttle;
+            steering = input.steering;
+            worldAimVector = input.worldAimVector;
+        }
+
+        [ClientRpc(Delivery = RpcDelivery.Unreliable)]
+        private void SendNetworkStateClientRpc(NetworkState state)
+        {
+            transform.position = state.position;
+            transform.rotation = state.rotation;
+
+            body.linearVelocity = state.linearVelocity;
+            body.angularVelocity = state.angularVelocity;
+
+            turretRotation = state.turretRotation;
+            turretVelocity = state.turretVelocity;
         }
 
         private void RotateTurret()
@@ -170,7 +203,7 @@ namespace TinyTanks.Tanks
             var ray = new Ray(sightCamera.transform.position, sightCamera.transform.forward);
             if (Physics.Raycast(ray, out var hit, 1024))
             {
-                targetingRange = hit.distance;
+                targetingRange = Mathf.Max(hit.distance, 5f);
             }
             else
             {
@@ -181,18 +214,18 @@ namespace TinyTanks.Tanks
             var worldVector = (aimPoint - model.gunPivot.position).normalized;
             var localVector = transform.InverseTransformDirection(worldVector);
             var rotation = Quaternion.LookRotation(localVector, Vector3.up);
-            var target = new Vector2(rotation.eulerAngles.y, -rotation.eulerAngles.x);
+            turretTarget = new Vector2(rotation.eulerAngles.y, -rotation.eulerAngles.x);
 
             var delta = new Vector2()
             {
-                x = Mathf.DeltaAngle(turretRotation.x, target.x),
-                y = Mathf.DeltaAngle(turretRotation.y, target.y),
+                x = Mathf.DeltaAngle(turretRotation.x, turretTarget.x),
+                y = Mathf.DeltaAngle(turretRotation.y, turretTarget.y),
             };
 
-            turretRotation += traverseVelocity * Time.fixedDeltaTime;
-            traverseVelocity += (delta * traverseSpeedSpring - traverseVelocity * traverseSpeedDamping) * Time.fixedDeltaTime;
-            traverseVelocity.x = Mathf.Clamp(traverseVelocity.x, -maxTraverseSpeed, maxTraverseSpeed);
-            traverseVelocity.y = Mathf.Clamp(traverseVelocity.y, -maxTraverseSpeed, maxTraverseSpeed);
+            turretRotation += turretVelocity * Time.fixedDeltaTime;
+            turretVelocity += (delta * traverseSpeedSpring - turretVelocity * traverseSpeedDamping) * Time.fixedDeltaTime;
+            turretVelocity.x = Mathf.Clamp(turretVelocity.x, -maxTraverseSpeed, maxTraverseSpeed);
+            turretVelocity.y = Mathf.Clamp(turretVelocity.y, -maxTraverseSpeed, maxTraverseSpeed);
 
             turretRotation = ClampTurretRotation(turretRotation);
         }
@@ -310,6 +343,59 @@ namespace TinyTanks.Tanks
 
             Gizmos.color = new Color(1f, 1f, 1f, 0.5f);
             Gizmos.DrawWireCube(bounds.center, bounds.size);
+        }
+
+        public struct InputData : INetworkSerializable
+        {
+            public float throttle;
+            public float steering;
+            public Vector3 worldAimVector;
+
+            public InputData(TankController tank)
+            {
+                throttle = tank.throttle;
+                steering = tank.steering;
+                worldAimVector = tank.worldAimVector;
+            }
+
+            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+            {
+                serializer.SerializeValue(ref throttle);
+                serializer.SerializeValue(ref steering);
+                serializer.SerializeValue(ref worldAimVector);
+            }
+        }
+        
+        public struct NetworkState : INetworkSerializable
+        {
+            public Vector3 position;
+            public Quaternion rotation;
+            public Vector3 linearVelocity;
+            public Vector3 angularVelocity;
+            public Vector2 turretRotation;
+            public Vector2 turretVelocity;
+
+            public NetworkState(TankController tank)
+            {
+                position = tank.transform.position;
+                rotation = tank.transform.rotation;
+
+                linearVelocity = tank.body.linearVelocity;
+                angularVelocity = tank.body.angularVelocity;
+
+                turretRotation = tank.turretRotation;
+                turretVelocity = tank.turretVelocity;
+            }
+
+            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+            {
+                serializer.SerializeValue(ref position);
+                serializer.SerializeValue(ref rotation);
+                serializer.SerializeValue(ref linearVelocity);
+                serializer.SerializeValue(ref angularVelocity);
+                serializer.SerializeValue(ref turretRotation);
+                serializer.SerializeValue(ref turretVelocity);
+            }
         }
     }
 }

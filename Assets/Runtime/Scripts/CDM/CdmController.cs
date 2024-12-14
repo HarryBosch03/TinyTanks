@@ -1,10 +1,11 @@
 using TinyTanks.Health;
 using TinyTanks.Utility;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace TinyTanks.CDM
 {
-    public class CdmController : MonoBehaviour, ICanBeDamaged
+    public class CdmController : NetworkBehaviour, ICanBeDamaged
     {
         public int armorDefense;
         public ParticleSystem spallParticles;
@@ -28,12 +29,17 @@ namespace TinyTanks.CDM
                 collision = GetComponentsInChildren<Collider>();
                 components = GetComponentsInChildren<CdmComponent>();
             }
-
+            else if (!IsServer)
+            {
+                report = default;
+                return;
+            }
+            
             report.entryRay = new Ray(source.origin, source.direction);
             report.exitRay = new Ray(source.hitPoint, (source.direction - source.hitNormal).normalized);
 
             var angle = Mathf.Cos(Vector3.Dot(-source.hitNormal, source.direction)) * Mathf.Rad2Deg;
-
+            
             if (damage.damageClass < defense)
             {
                 report.canPenetrate = false;
@@ -57,6 +63,7 @@ namespace TinyTanks.CDM
                 for (var i = 0; i < report.spall.Length; i++)
                 {
                     ref var spall = ref report.spall[i];
+                    spall = ICanBeDamaged.DamageReport.SpallReport.None;
                     var orientation = Quaternion.LookRotation(report.exitRay.direction);
                     orientation *= Quaternion.Euler(rng.NextFloat(-damage.spallAngle, damage.spallAngle), rng.NextFloat(-damage.spallAngle, damage.spallAngle), 0f);
 
@@ -103,12 +110,12 @@ namespace TinyTanks.CDM
                     }
                 }
             }
-
-
+            
             report.DebugDraw();
             if (Application.isPlaying) NotifyDamagedRpc(damage, source, report);
         }
 
+        [Rpc(SendTo.Everyone)]
         private void NotifyDamagedRpc(DamageInstance damage, DamageSource source, ICanBeDamaged.DamageReport report)
         {
             ICanBeDamaged.NotifyDamaged(gameObject, damage, source, report);

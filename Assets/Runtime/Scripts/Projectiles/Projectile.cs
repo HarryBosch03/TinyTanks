@@ -1,4 +1,5 @@
 using TinyTanks.Health;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace TinyTanks.Projectiles
@@ -20,7 +21,7 @@ namespace TinyTanks.Projectiles
         [HideInInspector]
         public Vector3 velocity;
 
-        public GameObject shooter;
+        public NetworkObject shooter;
 
         private void OnEnable()
         {

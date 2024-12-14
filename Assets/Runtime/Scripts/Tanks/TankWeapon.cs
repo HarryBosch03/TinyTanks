@@ -1,11 +1,12 @@
 using System;
 using TinyTanks.Health;
 using TinyTanks.Projectiles;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace TinyTanks.Tanks
 {
-    public class TankWeapon : MonoBehaviour
+    public class TankWeapon : NetworkBehaviour
     {
         public string displayName;
         public Sprite icon;
@@ -48,7 +49,16 @@ namespace TinyTanks.Tanks
             };
         }
 
-        public void SetShooting(bool shooting) { this.shooting = shooting; }
+        public void SetShooting(bool shooting)
+        {
+            if (IsOwner) SetShootingServerRpc(shooting);
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void SetShootingServerRpc(bool shooting)
+        {
+            this.shooting = shooting;
+        }
 
         private void FixedUpdate()
         {
@@ -56,7 +66,7 @@ namespace TinyTanks.Tanks
             {
                 var instance = Instantiate(projectile, muzzle.position, muzzle.rotation);
 
-                instance.shooter = tank.gameObject;
+                instance.shooter = tank.NetworkObject;
                 instance.damage = damage;
                 instance.startSpeed = projectileSpeed;
 
@@ -64,9 +74,10 @@ namespace TinyTanks.Tanks
                 WeaponFiredEvent?.Invoke();
 
                 reloadTimer = fireDelay;
-                //tank.predictionBody.AddForceAtPosition(-muzzle.forward * recoilForce, muzzle.position, ForceMode.VelocityChange);
+                tank.body.AddForceAtPosition(-muzzle.forward * recoilForce, muzzle.position, ForceMode.VelocityChange);
 
                 if (fireFx != null && !(tank.isActiveViewer && tank.sightCamera)) fireFx.Play(true);
+                if (!automatic) shooting = false;
             }
 
             reloadTimer -= Time.fixedDeltaTime;

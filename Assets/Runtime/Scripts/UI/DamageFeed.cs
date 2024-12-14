@@ -65,7 +65,7 @@ namespace TinyTanks.UI
             feed.Clear();
             queue.Clear();
             
-            if (source.invoker != null)
+            if (source.invoker.TryGet(out var invoker))
             {
                 if (!report.canPenetrate)
                 {
@@ -82,7 +82,7 @@ namespace TinyTanks.UI
                     {
                         var spall = report.spall[i];
                         var hitComponent = cdmController.GetComponentFromName(spall.hitComponent);
-                        if (spall.hitComponent != null)
+                        if (!string.IsNullOrEmpty(spall.hitComponent))
                         {
                             if (!componentCounts.TryAdd(hitComponent, 1))
                                 componentCounts[hitComponent]++;
