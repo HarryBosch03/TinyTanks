@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using FishNet.Object;
 using TinyTanks.CDM;
 using TinyTanks.Health;
 using TMPro;
@@ -62,12 +60,12 @@ namespace TinyTanks.UI
             }
         }
 
-        private void OnDamaged(NetworkObject victim, DamageInstance damage, DamageSource source, ICanBeDamaged.DamageReport report)
+        private void OnDamaged(GameObject victim, DamageInstance damage, DamageSource source, ICanBeDamaged.DamageReport report)
         {
             feed.Clear();
             queue.Clear();
             
-            if (source.invoker != null && source.invoker.Owner.IsLocalClient)
+            if (source.invoker != null)
             {
                 if (!report.canPenetrate)
                 {
@@ -95,7 +93,7 @@ namespace TinyTanks.UI
                     for (var i = 0; i < keys.Length; i++)
                     {
                         var key = keys[i];
-                        if (key.destroyed.Value)
+                        if (key.destroyed)
                         {
                             queue.Enqueue(new FeedEntry($"{key.displayName} Destroyed"));
                         }

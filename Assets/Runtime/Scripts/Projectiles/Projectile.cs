@@ -1,5 +1,3 @@
-using System;
-using FishNet.Object;
 using TinyTanks.Health;
 using UnityEngine;
 
@@ -22,7 +20,7 @@ namespace TinyTanks.Projectiles
         [HideInInspector]
         public Vector3 velocity;
 
-        public NetworkObject shooter;
+        public GameObject shooter;
 
         private void OnEnable()
         {

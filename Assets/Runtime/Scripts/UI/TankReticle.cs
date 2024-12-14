@@ -36,7 +36,7 @@ namespace TinyTanks.UI
         {
             if (!tank.isActiveViewer) return;
 
-            offset = mainCamera.WorldToScreenPoint(tank.simModel.gunPivot.position + tank.simModel.gunPivot.forward * tank.targetingRange);
+            offset = mainCamera.WorldToScreenPoint(tank.model.gunPivot.position + tank.model.gunPivot.forward * tank.targetingRange);
             smoothedOffset = Vector2.Lerp(smoothedOffset, offset, Time.deltaTime / Mathf.Max(Time.deltaTime, offsetSmoothing));
             transform.position = new Vector3(smoothedOffset.x, smoothedOffset.y, transform.position.z);
             scopeFeature.passMaterial.SetVector("_Offset", smoothedOffset - new Vector2(Screen.width, Screen.height) / 2f);

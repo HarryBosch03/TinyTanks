@@ -1,13 +1,10 @@
 using System;
-using System.Linq;
-using FishNet.Object;
-using FishNet.Object.Synchronizing;
 using TinyTanks.Health;
 using UnityEngine;
 
 namespace TinyTanks.CDM
 {
-    public class CdmComponent : NetworkBehaviour
+    public class CdmComponent : MonoBehaviour
     {
         public int maxHealth;
         public Color baseColor = Color.white;
@@ -18,12 +15,11 @@ namespace TinyTanks.CDM
         private ICdmShape[] shapes;
         private Renderer[] renderers;
 
-        public readonly SyncVar<bool> destroyed = new SyncVar<bool>(ICanBeDamaged.HealthSyncSettings);
-        public readonly SyncVar<int> currentHealth = new SyncVar<int>(ICanBeDamaged.HealthSyncSettings);
-        
         public string displayName => name;
         public float visibleTime { get; set; }
         public float flashTime { get; set; }
+        public bool destroyed { get; private set; }
+        public int currentHealth { get; private set; }
         
         private void Awake()
         {
@@ -31,14 +27,10 @@ namespace TinyTanks.CDM
             renderers = GetComponentsInChildren<Renderer>();
         }
 
-        public override void OnStartServer()
+        private void OnEnable()
         {
-            currentHealth.Value = maxHealth;
-            destroyed.Value = false;
-        }
-
-        public override void OnStartNetwork()
-        {
+            currentHealth = maxHealth;
+            destroyed = false;
             ICanBeDamaged.DamagedEvent += OnDamaged;
         }
 
@@ -63,23 +55,23 @@ namespace TinyTanks.CDM
 
         public void Damage(int damage)
         {
-            if (Application.isPlaying && !IsServerStarted) return;
+            if (!Application.isPlaying) return;
             
-            currentHealth.Value -= damage;
-            if (currentHealth.Value <= 0)
+            currentHealth -= damage;
+            if (currentHealth <= 0)
             {
-                currentHealth.Value = 0;
-                destroyed.Value = true;
+                currentHealth = 0;
+                destroyed = true;
             }
         }
 
         private void UpdateRenderers()
         {
             var propertyBlock = new MaterialPropertyBlock();
-            var health = Mathf.Clamp01((float)currentHealth.Value / maxHealth);
+            var health = Mathf.Clamp01((float)currentHealth / maxHealth);
             var color = Color.Lerp(Color.Lerp(new Color(0.5f, 0.5f, 0.5f, 1f), baseColor, Mathf.Sin(Time.time) * 0.5f + 0.5f), baseColor, health);
             color.a = alpha * health;
-            if (destroyed.Value) color = new Color(0.5f, 0.5f, 0.5f, 0.5f * alpha);
+            if (destroyed) color = new Color(0.5f, 0.5f, 0.5f, 0.5f * alpha);
             if (flashTime > 0f) color = Color.white * flashBrightness;
             
             propertyBlock.SetColor("_BaseColor", color);
@@ -112,7 +104,7 @@ namespace TinyTanks.CDM
             return didHit;
         }
         
-        private void OnDamaged(NetworkObject victim, DamageInstance damage, DamageSource source, ICanBeDamaged.DamageReport report)
+        private void OnDamaged(GameObject victim, DamageInstance damage, DamageSource source, ICanBeDamaged.DamageReport report)
         {
             if (transform.IsChildOf(victim.transform) && Array.Exists(report.spall, e => e.hitComponent == name))
             {

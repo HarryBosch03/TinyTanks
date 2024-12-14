@@ -17,12 +17,9 @@ namespace TinyTanks.Tanks
         
         public override void MutateCameraState(ref CameraState curState, float deltaTime)
         {
-            var targetTransform = target.NetworkObject.GetGraphicalObject();
-            if (targetTransform == null) targetTransform = target.transform;
-
             var orientation = Quaternion.Euler(-freeLookRotation.y, freeLookRotation.x, 0f);
             
-            curState.RawPosition = targetTransform.position + orientation * offset;
+            curState.RawPosition = target.transform.position + orientation * offset;
             curState.RawOrientation = orientation;
         }
 

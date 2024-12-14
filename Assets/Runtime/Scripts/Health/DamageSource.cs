@@ -1,17 +1,16 @@
-using FishNet.Object;
 using UnityEngine;
 
 namespace TinyTanks.Health
 {
     public struct DamageSource
     {
-        public NetworkObject invoker;
+        public GameObject invoker;
         public Vector3 origin;
         public Vector3 direction;
         public Vector3 hitPoint;
         public Vector3 hitNormal;
 
-        public DamageSource(NetworkObject invoker, Ray ray, RaycastHit hit)
+        public DamageSource(GameObject invoker, Ray ray, RaycastHit hit)
         {
             this.invoker = invoker;
             

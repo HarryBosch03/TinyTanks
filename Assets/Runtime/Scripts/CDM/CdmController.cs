@@ -1,11 +1,10 @@
-using FishNet.Object;
 using TinyTanks.Health;
 using TinyTanks.Utility;
 using UnityEngine;
 
 namespace TinyTanks.CDM
 {
-    public class CdmController : NetworkBehaviour, ICanBeDamaged
+    public class CdmController : MonoBehaviour, ICanBeDamaged
     {
         public int armorDefense;
         public ParticleSystem spallParticles;
@@ -28,11 +27,6 @@ namespace TinyTanks.CDM
             {
                 collision = GetComponentsInChildren<Collider>();
                 components = GetComponentsInChildren<CdmComponent>();
-            }
-            else if (!IsServerStarted)
-            {
-                report = default;
-                return;
             }
 
             report.entryRay = new Ray(source.origin, source.direction);
@@ -73,7 +67,7 @@ namespace TinyTanks.CDM
                     for (var j = 0; j < components.Length; j++)
                     {
                         var component = components[j];
-                        if (!component.destroyed.Value && component.DoesIntersect(spall.ray, out var enter) && enter < hitEnter)
+                        if (!component.destroyed && component.DoesIntersect(spall.ray, out var enter) && enter < hitEnter)
                         {
                             hitEnter = enter;
                             hitComponent = component;
@@ -115,8 +109,10 @@ namespace TinyTanks.CDM
             if (Application.isPlaying) NotifyDamagedRpc(damage, source, report);
         }
 
-        [ObserversRpc(RunLocally = true)]
-        private void NotifyDamagedRpc(DamageInstance damage, DamageSource source, ICanBeDamaged.DamageReport report) { ICanBeDamaged.NotifyDamaged(NetworkObject, damage, source, report); }
+        private void NotifyDamagedRpc(DamageInstance damage, DamageSource source, ICanBeDamaged.DamageReport report)
+        {
+            ICanBeDamaged.NotifyDamaged(gameObject, damage, source, report);
+        }
 
         public CdmComponent GetComponentFromName(string name)
         {

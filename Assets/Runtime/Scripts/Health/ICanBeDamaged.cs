@@ -1,6 +1,3 @@
-using FishNet.Object;
-using FishNet.Object.Synchronizing;
-using TinyTanks.CDM;
 using UnityEngine;
 
 namespace TinyTanks.Health
@@ -11,10 +8,8 @@ namespace TinyTanks.Health
         public int defense { get; }
         public void Damage(DamageInstance damage, DamageSource source, out DamageReport report);
 
-        protected static void NotifyDamaged(NetworkObject victim, DamageInstance damage, DamageSource source, DamageReport report) => DamagedEvent?.Invoke(victim, damage, source, report);
-        public static event System.Action<NetworkObject, DamageInstance, DamageSource, DamageReport> DamagedEvent;
-
-        public static readonly SyncTypeSettings HealthSyncSettings = new SyncTypeSettings(WritePermission.ServerOnly, ReadPermission.Observers);
+        protected static void NotifyDamaged(GameObject victim, DamageInstance damage, DamageSource source, DamageReport report) => DamagedEvent?.Invoke(victim, damage, source, report);
+        public static event System.Action<GameObject, DamageInstance, DamageSource, DamageReport> DamagedEvent;
 
         public struct DamageReport
         {

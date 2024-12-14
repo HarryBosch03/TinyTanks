@@ -1,17 +1,12 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using FishNet.Object;
-using FishNet.Object.Prediction;
-using FishNet.Transporting;
-using GameKit.Dependencies.Utilities;
 using Unity.Cinemachine;
 using UnityEngine;
 
 namespace TinyTanks.Tanks
 {
     [RequireComponent(typeof(Rigidbody))]
-    public class TankController : NetworkBehaviour
+    public class TankController : MonoBehaviour
     {
         public float maxFwdSpeed = 12f;
         public float maxReverseSpeed = 4f;
@@ -59,12 +54,9 @@ namespace TinyTanks.Tanks
         private bool onGround;
         private Vector2 traverseVelocity;
 
-        public PredictionRigidbody predictionBody;
-
         public float targetingRange { get; private set; }
         public Rigidbody body { get; private set; }
-        public TankModel simModel { get; private set; }
-        public TankModel visualModel { get; private set; }
+        public TankModel model { get; private set; }
         public bool useSight { get; private set; }
 
         public float throttle { get; set; }
@@ -81,26 +73,12 @@ namespace TinyTanks.Tanks
         private void Awake()
         {
             body = GetComponent<Rigidbody>();
-            predictionBody = ObjectCaches<PredictionRigidbody>.Retrieve();
-            predictionBody.Initialize(body);
             body.useGravity = false;
 
-            simModel = GetComponentInChildren<TankModel>();
+            model = GetComponentInChildren<TankModel>();
+            model.name = $"[SIM] {model.name}";
 
-            var graphicalObject = NetworkObject.GetGraphicalObject();
-            if (graphicalObject == null) graphicalObject = transform;
-            visualModel = Instantiate(simModel, graphicalObject);
-            visualModel.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-
-            simModel.name = $"[SIM] {simModel.name}";
-            visualModel.name = $"[VIS] {visualModel.name}";
-
-            foreach (var renderer in simModel.GetComponentsInChildren<Renderer>()) renderer.enabled = false;
-            foreach (var collider in visualModel.GetComponentsInChildren<Collider>()) collider.enabled = false;
-
-            visualModel.parentModel = simModel;
-
-            sightCamera.transform.SetParent(simModel.gunPivot);
+            sightCamera.transform.SetParent(model.gunPivot);
             
             leftTrackGroundSamples[0] = transform.TransformPoint(-groundCheckPoint.x, 0f, groundCheckPoint.z);
             leftTrackGroundSamples[1] = transform.TransformPoint(-groundCheckPoint.x, 0f, -groundCheckPoint.z);
@@ -109,13 +87,6 @@ namespace TinyTanks.Tanks
             rightTrackGroundSamples[1] = transform.TransformPoint(groundCheckPoint.x, 0f, -groundCheckPoint.z);
             
             SetActiveViewer(false);
-        }
-
-        private void OnDestroy()
-        {
-            var body = predictionBody;
-            ObjectCaches<PredictionRigidbody>.StoreAndDefault(ref body);
-            predictionBody = body;
         }
 
         private void Start()
@@ -132,18 +103,11 @@ namespace TinyTanks.Tanks
 
         private void OnDisable() { all.Remove(this); }
 
-        [Server]
-        public void SetActive(bool isActive) { SetActiveRpc(isActive); }
-
-        [ObserversRpc(RunLocally = true, ExcludeOwner = false, ExcludeServer = false)]
-        private void SetActiveRpc(bool isActive) { gameObject.SetActive(isActive); }
-
-        public override void OnStartNetwork()
+        public void SetActive(bool isActive)
         {
-            TimeManager.OnTick += OnTick;
-            TimeManager.OnPostTick += OnPostTick;
+            gameObject.SetActive(isActive); 
         }
-
+        
         public void SetActiveViewer(bool isActiveViewer)
         {
             this.isActiveViewer = isActiveViewer;
@@ -151,79 +115,28 @@ namespace TinyTanks.Tanks
             UpdateCameraStates();
         }
 
-        public override void OnStopNetwork()
+        private void FixedUpdate()
         {
-            TimeManager.OnTick -= OnTick;
-            TimeManager.OnPostTick -= OnPostTick;
-        }
-
-        private void OnTick() { RunInputs(CreateReplicateData()); }
-
-        private ReplicateData CreateReplicateData()
-        {
-            if (!IsOwner) return default;
-
-            var data = new ReplicateData();
-
-            data.throttle = throttle;
-            data.steering = steering;
-            data.changeUseSight = changeUseSight;
-            data.worldAimVector = worldAimVector;
-
-            return data;
-        }
-
-        [Replicate]
-        private void RunInputs(ReplicateData data, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
-        {
-            if (state.IsFuture()) return;
-
-            if (useSight != data.changeUseSight)
+            if (useSight != changeUseSight)
             {
-                useSight = data.changeUseSight;
+                useSight = changeUseSight;
                 UpdateCameraStates();
             }
 
             CheckIfOnGround();
-            MoveTank(data);
-            RotateTurret(data);
-            AlignSight(data.worldAimVector);
+            MoveTank();
+            RotateTurret();
+            AlignSight(worldAimVector);
 
-            predictionBody.AddForce(Physics.gravity, ForceMode.Acceleration);
-            predictionBody.Simulate();
+            body.AddForce(Physics.gravity, ForceMode.Acceleration);
         }
 
-        private void RotateTurret(ReplicateData data)
+        private void RotateTurret()
         {
             MoveTurret();
 
-            simModel.turretMount.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
-            simModel.gunPivot.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
-        }
-
-        private void OnPostTick() { CreateReconcile(); }
-
-        public override void CreateReconcile()
-        {
-            var data = new ReconcileData();
-
-            data.predictionBody = predictionBody;
-            data.turretRotation = turretRotation;
-            data.useSight = useSight;
-
-            ReconcileState(data);
-        }
-
-        [Reconcile]
-        private void ReconcileState(ReconcileData data, Channel channel = Channel.Unreliable)
-        {
-            predictionBody.Reconcile(data.predictionBody);
-            turretRotation = data.turretRotation;
-            if (useSight != data.useSight)
-            {
-                useSight = data.useSight;
-                UpdateCameraStates();
-            }
+            model.turretMount.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
+            model.gunPivot.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
         }
 
         public void SetUseSight(bool useSight) => changeUseSight = useSight;
@@ -265,7 +178,7 @@ namespace TinyTanks.Tanks
             }
 
             var aimPoint = sightCamera.transform.position + sightCamera.transform.forward * targetingRange;
-            var worldVector = (aimPoint - simModel.gunPivot.position).normalized;
+            var worldVector = (aimPoint - model.gunPivot.position).normalized;
             var localVector = transform.InverseTransformDirection(worldVector);
             var rotation = Quaternion.LookRotation(localVector, Vector3.up);
             var target = new Vector2(rotation.eulerAngles.y, -rotation.eulerAngles.x);
@@ -329,7 +242,7 @@ namespace TinyTanks.Tanks
                         var velocity = body.GetPointVelocity(hit.point);
                         var force = ((hit.point - point) * suspensionSpring - velocity * suspensionDamping) * body.mass;
                         force = Vector3.Project(force, hit.normal);
-                        predictionBody.AddForceAtPosition(force, hit.point);
+                        body.AddForceAtPosition(force, hit.point);
 
                         samples[i] = hit.point;
                         break;
@@ -338,52 +251,46 @@ namespace TinyTanks.Tanks
             }
         }
 
-        private void MoveTank(ReplicateData data)
+        private void MoveTank()
         {
             if (!onGround) return;
 
             var localVelX = Vector3.Dot(transform.right, body.linearVelocity);
             var localVelZ = Vector3.Dot(transform.forward, body.linearVelocity);
 
-            var maxSpeed = data.throttle > 0f ? maxFwdSpeed : maxReverseSpeed;
-            if (Mathf.Abs(data.throttle * maxSpeed) > Mathf.Abs(localVelZ))
+            var maxSpeed = throttle > 0f ? maxFwdSpeed : maxReverseSpeed;
+            if (Mathf.Abs(throttle * maxSpeed) > Mathf.Abs(localVelZ))
             {
-                var t = data.throttle > 0f ? Mathf.InverseLerp(0f, maxFwdSpeed, localVelZ) : Mathf.InverseLerp(0f, -maxReverseSpeed, localVelZ);
+                var t = throttle > 0f ? Mathf.InverseLerp(0f, maxFwdSpeed, localVelZ) : Mathf.InverseLerp(0f, -maxReverseSpeed, localVelZ);
                 var acceleration = maxSpeed / accelerationTime * accelerationCurve.Evaluate(t);
 
-                localVelZ = Mathf.MoveTowards(localVelZ, data.throttle * maxSpeed, acceleration * Time.fixedDeltaTime);
+                localVelZ = Mathf.MoveTowards(localVelZ, throttle * maxSpeed, acceleration * Time.fixedDeltaTime);
             }
             else
             {
-                localVelZ = Mathf.MoveTowards(localVelZ, data.throttle * maxSpeed, maxFwdSpeed * Time.fixedDeltaTime / brakeTime);
+                localVelZ = Mathf.MoveTowards(localVelZ, throttle * maxSpeed, maxFwdSpeed * Time.fixedDeltaTime / brakeTime);
             }
 
             localVelX = (0f - localVelX) * xFriction;
 
             var localAngularVelocity = transform.InverseTransformVector(body.angularVelocity);
-            localAngularVelocity.y += (maxTurnSpeed * data.steering - localAngularVelocity.y) * 2f * Time.fixedDeltaTime / turnAccelerationTime;
+            localAngularVelocity.y += (maxTurnSpeed * steering - localAngularVelocity.y) * 2f * Time.fixedDeltaTime / turnAccelerationTime;
             body.AddTorque(transform.TransformVector(localAngularVelocity) - body.angularVelocity, ForceMode.VelocityChange);
 
             var newVelocity = transform.right * localVelX + transform.forward * localVelZ + Vector3.Project(body.linearVelocity, transform.up);
             newVelocity += Vector3.ProjectOnPlane(-Physics.gravity, transform.up) * Time.fixedDeltaTime;
             var force = (newVelocity - body.linearVelocity) / Time.fixedDeltaTime;
 
-            predictionBody.AddForce(newVelocity - body.linearVelocity, ForceMode.VelocityChange);
-            predictionBody.AddTorque((transform.forward * Vector3.Dot(force, transform.right) - transform.right * Vector3.Dot(force, transform.forward)) * moveTilt, ForceMode.Acceleration);
+            body.AddForce(newVelocity - body.linearVelocity, ForceMode.VelocityChange);
+            body.AddTorque((transform.forward * Vector3.Dot(force, transform.right) - transform.right * Vector3.Dot(force, transform.forward)) * moveTilt, ForceMode.Acceleration);
         }
 
         private void Update()
         {
-            if (IsOwner) AlignSight(worldAimVector);
+            AlignSight(worldAimVector);
 
-            simModel.turretMount.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
-            simModel.gunPivot.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
-        }
-
-        private void LateUpdate()
-        {
-            var graphicalObject = NetworkObject.GetGraphicalObject();
-            if (graphicalObject == null) graphicalObject = transform;
+            model.turretMount.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
+            model.gunPivot.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
         }
 
         private void AlignSight(Vector3 worldAimVector)
@@ -403,35 +310,6 @@ namespace TinyTanks.Tanks
 
             Gizmos.color = new Color(1f, 1f, 1f, 0.5f);
             Gizmos.DrawWireCube(bounds.center, bounds.size);
-        }
-
-        public struct ReconcileData : IReconcileData
-        {
-            public PredictionRigidbody predictionBody;
-            public Vector2 turretRotation;
-            public Vector2 traverseVelocity;
-
-            public bool useSight;
-
-            private uint tick;
-
-            public uint GetTick() => tick;
-            public void SetTick(uint value) => tick = value;
-            public void Dispose() { }
-        }
-
-        public struct ReplicateData : IReplicateData
-        {
-            public float throttle;
-            public float steering;
-            public bool changeUseSight;
-            public Vector3 worldAimVector;
-
-            private uint tick;
-
-            public uint GetTick() => tick;
-            public void SetTick(uint value) => tick = value;
-            public void Dispose() { }
         }
     }
 }

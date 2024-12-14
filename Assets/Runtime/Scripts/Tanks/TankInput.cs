@@ -1,5 +1,5 @@
+using System;
 using System.Linq;
-using FishNet.Object;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -8,7 +8,7 @@ namespace TinyTanks.Tanks
     [SelectionBase]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(TankController))]
-    public class TankInput : NetworkBehaviour
+    public class TankInput : MonoBehaviour
     {
         public int controllerIndex;
         public float mouseCameraSensitivity;
@@ -29,30 +29,19 @@ namespace TinyTanks.Tanks
             mainCamera = Camera.main;
         }
 
-        public override void OnStartNetwork()
+        private void OnEnable()
         {
-            if (Owner == null)
-            {
-                enabled = false;
-            }
-
-            if (Owner.IsLocalClient)
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-            }
+            Cursor.lockState = CursorLockMode.Locked;
         }
 
-        public override void OnStopNetwork()
+        private void OnDisable()
         {
-            if (Owner.IsLocalClient)
-            {
-                Cursor.lockState = CursorLockMode.None;
-            }
+            Cursor.lockState = CursorLockMode.None;
         }
 
         private void Update()
         {
-            if (Application.isFocused && IsOwner)
+            if (Application.isFocused)
             {
                 var cursorDelta = Vector2.zero;
                 var gp = Gamepad.all.ElementAtOrDefault(controllerIndex);
@@ -95,7 +84,7 @@ namespace TinyTanks.Tanks
                 targetCursorPosition.x = Mathf.Clamp(targetCursorPosition.x, 0, Screen.width);
                 targetCursorPosition.y = Mathf.Clamp(targetCursorPosition.y, 0, Screen.height);
 
-                var currentCursorPosition = (Vector2)mainCamera.WorldToScreenPoint(mainCamera.transform.position + tank.simModel.gunPivot.forward * 1024f);
+                var currentCursorPosition = (Vector2)mainCamera.WorldToScreenPoint(mainCamera.transform.position + tank.model.gunPivot.forward * 1024f);
                 currentCursorPosition.x = Mathf.Clamp(currentCursorPosition.x, 0, Screen.width);
                 currentCursorPosition.y = Mathf.Clamp(currentCursorPosition.y, 0, Screen.height);
                 
@@ -115,15 +104,8 @@ namespace TinyTanks.Tanks
                 followCamera.freeLookRotation = new Vector2(camOrientation.y, -camOrientation.x);
             }
 
-            if (IsOwner)
-            {
-                cursor.gameObject.SetActive(true);
-                cursor.position = cursorPosition;
-            }
-            else
-            {
-                cursor.gameObject.SetActive(false);
-            }
+            cursor.gameObject.SetActive(true);
+            cursor.position = cursorPosition;
         }
     }
 }

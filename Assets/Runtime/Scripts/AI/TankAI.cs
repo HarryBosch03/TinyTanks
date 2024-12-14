@@ -1,4 +1,3 @@
-using FishNet.Object;
 using TinyTanks.Tanks;
 using UnityEngine;
 using UnityEngine.AI;
@@ -7,7 +6,7 @@ using Random = UnityEngine.Random;
 namespace TinyTanks.AI
 {
     [RequireComponent(typeof(TankController))]
-    public class TankAI : NetworkBehaviour
+    public class TankAI : MonoBehaviour
     {
         public float corneringDistance = 25f;
         public float maxTurretDelta = 70f;
@@ -27,8 +26,6 @@ namespace TinyTanks.AI
 
         private void FixedUpdate()
         {
-            if (!HasAuthority) return;
-
             if (target == null && TankController.all.Count > 1)
             {
                 var randomIndex = Random.Range(0, TankController.all.Count - 1);
@@ -50,10 +47,10 @@ namespace TinyTanks.AI
                     tank.throttle = 0f;
                     tank.steering = 0f;
 
-                    var targetDirection = (target.simModel.turretMount.position - tank.simModel.gunPivot.position).normalized;
+                    var targetDirection = (target.model.turretMount.position - tank.model.gunPivot.position).normalized;
                     MoveTurretTowards(targetDirection);
 
-                    if (Mathf.Acos(Vector3.Dot(targetDirection, tank.simModel.gunPivot.forward)) * Mathf.Rad2Deg < 1f)
+                    if (Mathf.Acos(Vector3.Dot(targetDirection, tank.model.gunPivot.forward)) * Mathf.Rad2Deg < 1f)
                     {
                         targetAcquisitionTimer += Time.deltaTime;
                     }
@@ -88,7 +85,7 @@ namespace TinyTanks.AI
 
         private bool CanSeeTarget()
         {
-            var ray = new Ray(tank.simModel.turretMount.position, (target.simModel.turretMount.position - tank.simModel.turretMount.position).normalized);
+            var ray = new Ray(tank.model.turretMount.position, (target.model.turretMount.position - tank.model.turretMount.position).normalized);
             var query = Physics.RaycastAll(ray);
 
             var bestHit = (RaycastHit?)null;

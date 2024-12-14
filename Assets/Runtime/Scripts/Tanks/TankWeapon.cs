@@ -1,16 +1,11 @@
 using System;
-using FishNet;
-using FishNet.Managing.Timing;
-using FishNet.Object;
-using FishNet.Object.Prediction;
-using FishNet.Transporting;
 using TinyTanks.Health;
 using TinyTanks.Projectiles;
 using UnityEngine;
 
 namespace TinyTanks.Tanks
 {
-    public class TankWeapon : NetworkBehaviour
+    public class TankWeapon : MonoBehaviour
     {
         public string displayName;
         public Sprite icon;
@@ -42,70 +37,31 @@ namespace TinyTanks.Tanks
             if (string.IsNullOrEmpty(displayName)) displayName = name;
         }
 
-        public override void OnStartNetwork() { TimeManager.OnTick += OnTick; }
-
-        public override void OnStopNetwork() { TimeManager.OnTick -= OnTick; }
-
-        private void OnTick()
-        {
-            CreateReconcile();
-            RunInputs(CreateReplicateData());
-        }
-
-        public override void CreateReconcile()
-        {
-            var data = new ReconcileData();
-            data.reloadTimer = reloadTimer;
-
-            ReconcileState(data);
-        }
-
-        [Reconcile]
-        private void ReconcileState(ReconcileData data, Channel channel = Channel.Unreliable) { reloadTimer = data.reloadTimer; }
-
-        private ReplicateData CreateReplicateData()
-        {
-            if (!IsOwner) return default;
-
-            var data = new ReplicateData()
-            {
-                shooting = shooting,
-            };
-
-            if (!automatic) shooting = false;
-
-            return data;
-        }
-
         private void Start()
         {
             var index = Array.IndexOf(tank.weapons, this);
             muzzle = index switch
             {
-                0 => tank.simModel.gunMuzzle,
-                1 => tank.simModel.coaxMuzzle,
+                0 => tank.model.gunMuzzle,
+                1 => tank.model.coaxMuzzle,
                 _ => throw new ArgumentOutOfRangeException()
             };
         }
 
         public void SetShooting(bool shooting) { this.shooting = shooting; }
 
-        [Replicate]
-        private void RunInputs(ReplicateData data, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
+        private void FixedUpdate()
         {
-            if (data.shooting && !isReloading)
+            if (shooting && !isReloading)
             {
-                if (state == ReplicateState.CurrentCreated)
-                {
-                    var instance = Instantiate(projectile, muzzle.position, muzzle.rotation);
+                var instance = Instantiate(projectile, muzzle.position, muzzle.rotation);
 
-                    instance.shooter = tank.NetworkObject;
-                    instance.damage = damage;
-                    instance.startSpeed = projectileSpeed;
+                instance.shooter = tank.gameObject;
+                instance.damage = damage;
+                instance.startSpeed = projectileSpeed;
 
-                    instance.velocity += body.GetPointVelocity(muzzle.position);
-                    WeaponFiredEvent?.Invoke();
-                }
+                instance.velocity += body.GetPointVelocity(muzzle.position);
+                WeaponFiredEvent?.Invoke();
 
                 reloadTimer = fireDelay;
                 //tank.predictionBody.AddForceAtPosition(-muzzle.forward * recoilForce, muzzle.position, ForceMode.VelocityChange);
@@ -141,29 +97,6 @@ namespace TinyTanks.Tanks
             }
 
             return muzzle.position + muzzle.forward * 500f;
-        }
-
-
-        public struct ReconcileData : IReconcileData
-        {
-            public float reloadTimer;
-
-            private uint tick;
-
-            public uint GetTick() => tick;
-            public void SetTick(uint value) => tick = value;
-            public void Dispose() { }
-        }
-
-        public struct ReplicateData : IReplicateData
-        {
-            public bool shooting;
-
-            private uint tick;
-
-            public uint GetTick() => tick;
-            public void SetTick(uint value) => tick = value;
-            public void Dispose() { }
         }
     }
 }
