@@ -139,7 +139,7 @@ namespace TinyTanks.Tanks
             CheckIfOnGround();
             MoveTank();
             RotateTurret();
-            AlignSight(worldAimPosition);
+            AlignSight();
 
             body.AddForce(Physics.gravity, ForceMode.Acceleration);
 
@@ -307,13 +307,13 @@ namespace TinyTanks.Tanks
 
         private void Update()
         {
-            AlignSight(worldAimPosition);
+            AlignSight();
 
             model.turretMount.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
             model.gunPivot.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
         }
 
-        private void AlignSight(Vector3 worldAimPosition)
+        private void AlignSight()
         {
             sightCamera.transform.rotation = Quaternion.LookRotation(worldAimPosition - sightCamera.transform.position, transform.up);
         }

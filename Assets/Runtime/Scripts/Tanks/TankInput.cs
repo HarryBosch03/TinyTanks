@@ -53,7 +53,7 @@ namespace TinyTanks.Tanks
             {
                 var cursorDelta = Vector2.zero;
                 var gp = Gamepad.all.ElementAtOrDefault(controllerIndex);
-                
+
                 if (controllerIndex == -1)
                 {
                     var kb = Keyboard.current;
@@ -93,16 +93,16 @@ namespace TinyTanks.Tanks
                 cameraRotation.x %= 360f;
                 cameraRotation.y = Mathf.Clamp(cameraRotation.y, -90f, 90f);
 
-                var ray = new Ray(mainCamera.transform.position, mainCamera.transform.forward);
-                if (Physics.Raycast(ray, out var hit, 1024f))
+                var ray = new Ray(mainCamera.transform.position, Quaternion.Euler(-cameraRotation.y, cameraRotation.x, 0f) * Vector3.forward);
+                tank.worldAimPosition = ray.GetPoint(1024f);
+                var hits = Physics.RaycastAll(ray, 1024f).OrderBy(e => e.distance);
+                foreach (var hit in hits)
                 {
+                    if (hit.collider.transform.IsChildOf(tank.transform)) continue;
                     tank.worldAimPosition = hit.point;
+                    break;
                 }
-                else
-                {
-                    tank.worldAimPosition = ray.GetPoint(1024f);
-                }
-                
+
                 followCamera.freeLookRotation = cameraRotation;
                 cursorPosition = mainCamera.WorldToScreenPoint(tank.worldAimPosition);
             }
