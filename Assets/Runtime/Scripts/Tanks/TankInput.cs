@@ -95,7 +95,7 @@ namespace TinyTanks.Tanks
                 targetCursorPosition.x = Mathf.Clamp(targetCursorPosition.x, 0, Screen.width);
                 targetCursorPosition.y = Mathf.Clamp(targetCursorPosition.y, 0, Screen.height);
 
-                var currentCursorPosition = (Vector2)mainCamera.WorldToScreenPoint(mainCamera.transform.position + tank.model.gunPivot.forward * 1024f);
+                var currentCursorPosition = (Vector2)mainCamera.WorldToScreenPoint(mainCamera.transform.position + tank.simModel.gunPivot.forward * 1024f);
                 currentCursorPosition.x = Mathf.Clamp(currentCursorPosition.x, 0, Screen.width);
                 currentCursorPosition.y = Mathf.Clamp(currentCursorPosition.y, 0, Screen.height);
                 

@@ -40,23 +40,16 @@ namespace TinyTanks.Tanks
             body = GetComponentInParent<Rigidbody>();
             tank = GetComponentInParent<TankController>();
             if (string.IsNullOrEmpty(displayName)) displayName = name;
-
         }
 
-        public override void OnStartNetwork()
-        {
-            TimeManager.OnTick += OnTick;
-        }
+        public override void OnStartNetwork() { TimeManager.OnTick += OnTick; }
 
-        public override void OnStopNetwork()
-        {
-            TimeManager.OnTick -= OnTick;
-        }
+        public override void OnStopNetwork() { TimeManager.OnTick -= OnTick; }
 
         private void OnTick()
         {
-            RunInputs(CreateReplicateData());
             CreateReconcile();
+            RunInputs(CreateReplicateData());
         }
 
         public override void CreateReconcile()
@@ -68,10 +61,7 @@ namespace TinyTanks.Tanks
         }
 
         [Reconcile]
-        private void ReconcileState(ReconcileData data, Channel channel = Channel.Unreliable)
-        {
-            reloadTimer = data.reloadTimer;
-        }
+        private void ReconcileState(ReconcileData data, Channel channel = Channel.Unreliable) { reloadTimer = data.reloadTimer; }
 
         private ReplicateData CreateReplicateData()
         {
@@ -83,7 +73,7 @@ namespace TinyTanks.Tanks
             };
 
             if (!automatic) shooting = false;
-            
+
             return data;
         }
 
@@ -92,16 +82,13 @@ namespace TinyTanks.Tanks
             var index = Array.IndexOf(tank.weapons, this);
             muzzle = index switch
             {
-                0 => tank.model.gunMuzzle,
-                1 => tank.model.coaxMuzzle,
+                0 => tank.simModel.gunMuzzle,
+                1 => tank.simModel.coaxMuzzle,
                 _ => throw new ArgumentOutOfRangeException()
             };
         }
 
-        public void SetShooting(bool shooting)
-        {
-            this.shooting = shooting;
-        }
+        public void SetShooting(bool shooting) { this.shooting = shooting; }
 
         [Replicate]
         private void RunInputs(ReplicateData data, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
@@ -111,24 +98,24 @@ namespace TinyTanks.Tanks
                 if (state == ReplicateState.CurrentCreated)
                 {
                     var instance = Instantiate(projectile, muzzle.position, muzzle.rotation);
-                
+
                     instance.shooter = tank.NetworkObject;
                     instance.damage = damage;
                     instance.startSpeed = projectileSpeed;
-                
+
                     instance.velocity += body.GetPointVelocity(muzzle.position);
                     WeaponFiredEvent?.Invoke();
                 }
 
                 reloadTimer = fireDelay;
                 //tank.predictionBody.AddForceAtPosition(-muzzle.forward * recoilForce, muzzle.position, ForceMode.VelocityChange);
-                
+
                 if (fireFx != null && !(tank.isActiveViewer && tank.sightCamera)) fireFx.Play(true);
             }
 
             reloadTimer -= Time.fixedDeltaTime;
         }
-        
+
         public Vector3 PredictProjectileArc()
         {
             var position = muzzle.position;
@@ -136,7 +123,7 @@ namespace TinyTanks.Tanks
 
             var maxTime = 5f;
             var deltaTime = 0.1f;
-            
+
             for (var t = 0f; t < maxTime; t += deltaTime)
             {
                 if (Physics.Linecast(position, position + velocity * deltaTime, out var hit))
@@ -148,15 +135,15 @@ namespace TinyTanks.Tanks
                 {
                     Debug.DrawLine(position, position + velocity * deltaTime, Color.red);
                 }
-                
+
                 position += velocity * deltaTime;
                 velocity += Physics.gravity * deltaTime;
             }
 
             return muzzle.position + muzzle.forward * 500f;
         }
-        
-        
+
+
         public struct ReconcileData : IReconcileData
         {
             public float reloadTimer;

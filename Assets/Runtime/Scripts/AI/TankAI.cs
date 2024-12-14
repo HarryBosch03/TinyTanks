@@ -50,10 +50,10 @@ namespace TinyTanks.AI
                     tank.throttle = 0f;
                     tank.steering = 0f;
 
-                    var targetDirection = (target.model.turretMount.position - tank.model.gunPivot.position).normalized;
+                    var targetDirection = (target.simModel.turretMount.position - tank.simModel.gunPivot.position).normalized;
                     MoveTurretTowards(targetDirection);
 
-                    if (Mathf.Acos(Vector3.Dot(targetDirection, tank.model.gunPivot.forward)) * Mathf.Rad2Deg < 1f)
+                    if (Mathf.Acos(Vector3.Dot(targetDirection, tank.simModel.gunPivot.forward)) * Mathf.Rad2Deg < 1f)
                     {
                         targetAcquisitionTimer += Time.deltaTime;
                     }
@@ -88,7 +88,7 @@ namespace TinyTanks.AI
 
         private bool CanSeeTarget()
         {
-            var ray = new Ray(tank.model.turretMount.position, (target.model.turretMount.position - tank.model.turretMount.position).normalized);
+            var ray = new Ray(tank.simModel.turretMount.position, (target.simModel.turretMount.position - tank.simModel.turretMount.position).normalized);
             var query = Physics.RaycastAll(ray);
 
             var bestHit = (RaycastHit?)null;

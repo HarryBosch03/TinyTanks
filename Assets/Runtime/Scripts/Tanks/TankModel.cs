@@ -1,9 +1,12 @@
+using System;
 using UnityEngine;
 
 namespace TinyTanks.Tanks
 {
     public class TankModel : MonoBehaviour
     {
+        public TankModel parentModel;
+        
         public Transform body;
         public Transform turret;
         
@@ -19,6 +22,15 @@ namespace TinyTanks.Tanks
         {
             turret.SetParent(turretMount);
             turret.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+        }
+
+        private void Update()
+        {
+            if (parentModel != null)
+            {
+                turretMount.localRotation = parentModel.turretMount.localRotation;
+                gunPivot.localRotation = parentModel.gunPivot.localRotation;
+            }
         }
 
         private void OnValidate()
