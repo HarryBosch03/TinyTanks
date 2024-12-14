@@ -13,6 +13,8 @@ namespace TinyTanks.Rendering
             new ShaderTagId("UniversalForward"),
             new ShaderTagId("UniversalForwardOnly"),
         };
+        
+        public bool renderInScene;
 
         public CdmRenderPass() { profilingSampler = new ProfilingSampler("Cdm Render Pass"); }
 
@@ -22,6 +24,8 @@ namespace TinyTanks.Rendering
             var renderingData = frameData.Get<UniversalRenderingData>();
             var lightData = frameData.Get<UniversalLightData>();
 
+            if (cameraData.isSceneViewCamera && !renderInScene) return;
+            
             using (var builder = renderGraph.AddRasterRenderPass<RenderPassData>("Cdm Render Pass", out var data, profilingSampler))
             {
                 var resourceData = frameData.Get<UniversalResourceData>();

@@ -92,11 +92,19 @@ namespace TinyTanks.Tanks
 
                 cameraRotation.x %= 360f;
                 cameraRotation.y = Mathf.Clamp(cameraRotation.y, -90f, 90f);
-                
-                tank.worldAimVector = Quaternion.Euler(-cameraRotation.y, cameraRotation.x, 0f) * Vector3.forward;
-                followCamera.freeLookRotation = cameraRotation;
 
-                cursorPosition = mainCamera.WorldToScreenPoint(mainCamera.transform.position + tank.worldAimVector);
+                var ray = new Ray(mainCamera.transform.position, mainCamera.transform.forward);
+                if (Physics.Raycast(ray, out var hit, 1024f))
+                {
+                    tank.worldAimPosition = hit.point;
+                }
+                else
+                {
+                    tank.worldAimPosition = ray.GetPoint(1024f);
+                }
+                
+                followCamera.freeLookRotation = cameraRotation;
+                cursorPosition = mainCamera.WorldToScreenPoint(tank.worldAimPosition);
             }
 
             cursor.gameObject.SetActive(true);

@@ -5,6 +5,8 @@ namespace TinyTanks.Rendering
     public class CdmRendererFeature : ScriptableRendererFeature
     {
         public CdmRenderPass pass;
+
+        public bool renderInScene;
         
         public override void Create()
         {
@@ -14,6 +16,7 @@ namespace TinyTanks.Rendering
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
+            pass.renderInScene = renderInScene;
             renderer.EnqueuePass(pass);
         }
     }

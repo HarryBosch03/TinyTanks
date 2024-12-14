@@ -26,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 70726869586398789}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.00000009362675, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.41713303, z: 0}
+  m_LocalPosition: {x: 0.00000008940697, y: 0.4346228, z: 0.08573354}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5440,6 +5440,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57428e2ccd9e44c9b52559f7aeb515d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   armorDefense: 2
   spallParticles: {fileID: 1002273685331831814}
 --- !u!1 &1044215432037023349
@@ -5786,6 +5787,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0049529a44c44e92900d7fc70edec647, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   displayName: Coax
   icon: {fileID: 21300000, guid: a8248648f3b68c94b85b36971f7093dc, type: 3}
   projectile: {fileID: 2848336949314863663, guid: da5ea41f8fbfc9f4184cb5ae8e8f8468, type: 3}
@@ -10822,6 +10824,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   maxHealth: 20
   baseColor: {r: 0.76862746, g: 0.16862746, b: 0.8784314, a: 1}
   flashFrameRate: 18
@@ -10855,7 +10858,7 @@ Transform:
   m_GameObject: {fileID: 2261287347311841079}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.114, y: -0.003, z: -0.096}
+  m_LocalPosition: {x: -0.114, y: -0.003, z: -0.132}
   m_LocalScale: {x: 0.12, y: 0.29475334, z: 0.092174806}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -10940,6 +10943,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   maxHealth: 20
   baseColor: {r: 0.76862746, g: 0.16862746, b: 0.8784314, a: 1}
   flashFrameRate: 18
@@ -11058,6 +11062,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   maxHealth: 20
   baseColor: {r: 1, g: 0.12156863, b: 0, a: 1}
   flashFrameRate: 18
@@ -11089,7 +11094,7 @@ Transform:
   m_GameObject: {fileID: 2593387200380342611}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.00000027211252, y: 0.074876964, z: 0.29752722}
+  m_LocalPosition: {x: 0.00000019553752, y: 0.053000003, z: 0.229}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -11107,10 +11112,10 @@ ParentConstraint:
   m_Enabled: 1
   serializedVersion: 2
   m_Weight: 1
-  m_TranslationAtRest: {x: 0, y: 0.07487699, z: 0.2975273}
+  m_TranslationAtRest: {x: 0, y: 0.053, z: 0.229}
   m_RotationAtRest: {x: 0, y: 0, z: 0}
   m_TranslationOffsets:
-  - {x: 0, y: 0, z: 0}
+  - {x: 0, y: -0.022717476, z: 0.16084671}
   m_RotationOffsets:
   - {x: 0, y: 0, z: 0}
   m_AffectTranslationX: 1
@@ -11136,6 +11141,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   maxHealth: 20
   baseColor: {r: 1, g: 0.12156863, b: 0, a: 1}
   flashFrameRate: 18
@@ -11416,6 +11422,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0049529a44c44e92900d7fc70edec647, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   displayName: 120mm Cannon
   icon: {fileID: 21300000, guid: 772b9e5795f19e347b5e765f9a9ad88e, type: 3}
   projectile: {fileID: 5331638167734849736, guid: 7d9f04090572f1b4992b290da71ec78d, type: 3}
@@ -17096,6 +17103,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   maxHealth: 20
   baseColor: {r: 1, g: 0.12156863, b: 0, a: 1}
   flashFrameRate: 18
@@ -17160,7 +17168,7 @@ Transform:
   m_GameObject: {fileID: 6063030640333808096}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.136, y: -0.003, z: -0.096}
+  m_LocalPosition: {x: 0.136, y: -0.003, z: -0.132}
   m_LocalScale: {x: 0.12, y: 0.29475334, z: 0.092174806}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -17245,6 +17253,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   maxHealth: 20
   baseColor: {r: 0.76862746, g: 0.16862746, b: 0.8784314, a: 1}
   flashFrameRate: 18
@@ -17504,6 +17513,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   maxHealth: 20
   baseColor: {r: 0, g: 1, b: 0.047058824, a: 1}
   flashFrameRate: 18
@@ -17622,6 +17632,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d10f5ee923ee8f146b2d41b409465fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   maxHealth: 20
   baseColor: {r: 1, g: 0.52156866, b: 0, a: 1}
   flashFrameRate: 18
@@ -18031,6 +18042,14 @@ PrefabInstance:
     - target: {fileID: 4013539907389939051, guid: 8bc76bab57baefc4199cb2ee9cff5dc6, type: 3}
       propertyPath: m_LocalPosition.z
       value: 0.29752722
+      objectReference: {fileID: 0}
+    - target: {fileID: 5553238660693427882, guid: 8bc76bab57baefc4199cb2ee9cff5dc6, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5553238660693427882, guid: 8bc76bab57baefc4199cb2ee9cff5dc6, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Cinemachine;
@@ -34,6 +35,7 @@ namespace TinyTanks.Tanks
         [Space]
         public LayerMask groundCheckMask;
         public Vector3 groundCheckPoint;
+        public int wheelsPerTrack = 5;
         public Canvas hud;
 
         [Space]
@@ -55,7 +57,6 @@ namespace TinyTanks.Tanks
         private bool onGround;
         private Vector2 turretVelocity;
 
-        public float targetingRange { get; private set; }
         public Rigidbody body { get; private set; }
         public TankModel model { get; private set; }
         public bool useSight { get; private set; }
@@ -64,18 +65,21 @@ namespace TinyTanks.Tanks
         public float steering { get; set; }
         public Vector2 turretRotation { get; private set; }
         public Vector2 turretTarget { get; private set; }
-        public Vector3 worldAimVector { get; set; }
+        public Vector3 worldAimPosition { get; set; }
         public bool isActiveViewer { get; private set; }
 
         public static List<TankController> all = new List<TankController>();
 
-        public Vector3[] leftTrackGroundSamples { get; } = new Vector3[2];
-        public Vector3[] rightTrackGroundSamples { get; } = new Vector3[2];
+        public Vector3[] leftTrackGroundSamples { get; private set; }
+        public Vector3[] rightTrackGroundSamples { get; private set; }
 
         private void Awake()
         {
             body = GetComponent<Rigidbody>();
             body.useGravity = false;
+
+            leftTrackGroundSamples = new Vector3[wheelsPerTrack];
+            rightTrackGroundSamples = new Vector3[wheelsPerTrack];
 
             model = GetComponentInChildren<TankModel>();
             model.name = $"[SIM] {model.name}";
@@ -100,7 +104,6 @@ namespace TinyTanks.Tanks
         private void OnEnable()
         {
             all.Add(this);
-            worldAimVector = transform.forward;
         }
 
         private void OnDisable() { all.Remove(this); }
@@ -136,7 +139,7 @@ namespace TinyTanks.Tanks
             CheckIfOnGround();
             MoveTank();
             RotateTurret();
-            AlignSight(worldAimVector);
+            AlignSight(worldAimPosition);
 
             body.AddForce(Physics.gravity, ForceMode.Acceleration);
 
@@ -148,7 +151,7 @@ namespace TinyTanks.Tanks
         {
             throttle = input.throttle;
             steering = input.steering;
-            worldAimVector = input.worldAimVector;
+            worldAimPosition = input.worldAimPosition;
         }
 
         [ClientRpc(Delivery = RpcDelivery.Unreliable)]
@@ -200,18 +203,7 @@ namespace TinyTanks.Tanks
 
         private void MoveTurret()
         {
-            var ray = new Ray(sightCamera.transform.position, sightCamera.transform.forward);
-            if (Physics.Raycast(ray, out var hit, 1024))
-            {
-                targetingRange = Mathf.Max(hit.distance, 5f);
-            }
-            else
-            {
-                targetingRange = 1024f;
-            }
-
-            var aimPoint = sightCamera.transform.position + sightCamera.transform.forward * targetingRange;
-            var worldVector = (aimPoint - model.gunPivot.position).normalized;
+            var worldVector = (worldAimPosition - model.gunPivot.position).normalized;
             var localVector = transform.InverseTransformDirection(worldVector);
             var rotation = Quaternion.LookRotation(localVector, Vector3.up);
             turretTarget = new Vector2(rotation.eulerAngles.y, -rotation.eulerAngles.x);
@@ -244,24 +236,19 @@ namespace TinyTanks.Tanks
         private void CheckIfOnGround()
         {
             onGround = false;
+            
+            sampleTrack(-1, leftTrackGroundSamples);
+            sampleTrack(1, rightTrackGroundSamples);
 
-            sampleTrack(new[]
+            void sampleTrack(int xSign, Vector3[] samples)
             {
-                transform.TransformPoint(-groundCheckPoint.x, 0f, groundCheckPoint.z),
-                transform.TransformPoint(-groundCheckPoint.x, 0f, -groundCheckPoint.z),
-            }, leftTrackGroundSamples);
-
-            sampleTrack(new[]
-            {
-                transform.TransformPoint(groundCheckPoint.x, 0f, groundCheckPoint.z),
-                transform.TransformPoint(groundCheckPoint.x, 0f, -groundCheckPoint.z),
-            }, rightTrackGroundSamples);
-
-            void sampleTrack(Vector3[] points, Vector3[] samples)
-            {
-                for (var i = 0; i < points.Length; i++)
+                var start = transform.TransformPoint(groundCheckPoint.x * xSign, 0f, groundCheckPoint.z);
+                var end = transform.TransformPoint(groundCheckPoint.x * xSign, 0f, -groundCheckPoint.z);
+                
+                for (var i = 0; i < samples.Length; i++)
                 {
-                    var point = points[i];
+                    var percent = i / (samples.Length - 1f);
+                    var point = Vector3.Lerp(start, end, percent);
                     var distance = groundCheckPoint.y;
                     var ray = new Ray(point + transform.up * distance, -transform.up);
                     var hits = Physics.RaycastAll(ray, distance, groundCheckMask).OrderBy(e => e.distance);
@@ -320,15 +307,15 @@ namespace TinyTanks.Tanks
 
         private void Update()
         {
-            AlignSight(worldAimVector);
+            AlignSight(worldAimPosition);
 
             model.turretMount.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
             model.gunPivot.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
         }
 
-        private void AlignSight(Vector3 worldAimVector)
+        private void AlignSight(Vector3 worldAimPosition)
         {
-            sightCamera.transform.rotation = Quaternion.LookRotation(worldAimVector, transform.up);
+            sightCamera.transform.rotation = Quaternion.LookRotation(worldAimPosition - sightCamera.transform.position, transform.up);
         }
 
         private void OnDrawGizmosSelected()
@@ -336,33 +323,44 @@ namespace TinyTanks.Tanks
             Gizmos.matrix = transform.localToWorldMatrix;
             Gizmos.color = Color.green;
 
-            Gizmos.DrawRay(new Vector3(groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z), Vector3.down * groundCheckPoint.y);
-            Gizmos.DrawRay(new Vector3(-groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z), Vector3.down * groundCheckPoint.y);
-            Gizmos.DrawRay(new Vector3(-groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z), Vector3.down * groundCheckPoint.y);
-            Gizmos.DrawRay(new Vector3(groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z), Vector3.down * groundCheckPoint.y);
+            var start = new Vector3(groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z);
+            var end = new Vector3(groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z);
 
+            for (var i = 0; i <wheelsPerTrack; i++)
+            {
+                var percent = i / (wheelsPerTrack - 1f);
+                var point = Vector3.Lerp(start, end, percent);
+                Gizmos.DrawRay(point, Vector3.down * groundCheckPoint.y);
+                Gizmos.DrawRay(new Vector3(-point.x, point.y, point.z), Vector3.down * groundCheckPoint.y);
+            }
+            
             Gizmos.color = new Color(1f, 1f, 1f, 0.5f);
             Gizmos.DrawWireCube(bounds.center, bounds.size);
+        }
+
+        private void OnValidate()
+        {
+            wheelsPerTrack = Mathf.Max(wheelsPerTrack, 2);
         }
 
         public struct InputData : INetworkSerializable
         {
             public float throttle;
             public float steering;
-            public Vector3 worldAimVector;
+            public Vector3 worldAimPosition;
 
             public InputData(TankController tank)
             {
                 throttle = tank.throttle;
                 steering = tank.steering;
-                worldAimVector = tank.worldAimVector;
+                worldAimPosition = tank.worldAimPosition;
             }
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
             {
                 serializer.SerializeValue(ref throttle);
                 serializer.SerializeValue(ref steering);
-                serializer.SerializeValue(ref worldAimVector);
+                serializer.SerializeValue(ref worldAimPosition);
             }
         }
         
