@@ -5338,8 +5338,8 @@ MonoBehaviour:
   suspensionDamping: 3
   groundCheckMask:
     serializedVersion: 2
-    m_Bits: 1
-  groundCheckPoint: {x: 0.274, y: -0.07, z: 0.54}
+    m_Bits: 4294967295
+  groundCheckPoint: {x: 0.274, y: 0.28, z: 0.54}
   hud: {fileID: 4495593543258346076}
   limitTurretX: 0
   turretLimitX: {x: 0, y: 0}

@@ -21,19 +21,6 @@ namespace TinyTanks.Tanks
             turret.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
         }
 
-        public void DisableAllBehaviours<T>() where T : Component => DisableAllBehaviours<T>(body, turret);
-        private static void DisableAllBehaviours<T>(params Transform[] targets) where T : Component
-        {
-            var field = typeof(T).GetProperty("enabled");
-            foreach (var target in targets)
-            {
-                foreach (var component in target.GetComponentsInChildren<T>())
-                {
-                    field.SetValue(component, false);
-                }
-            }
-        }
-
         private void OnValidate()
         {
             if (!Application.isPlaying)

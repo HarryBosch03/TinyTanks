@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Transporting;
@@ -57,7 +58,6 @@ namespace TinyTanks.Tanks
         private bool changeUseSight;
         private bool onGround;
         private Vector2 traverseVelocity;
-        private ReplicateData lastValidReplicateData;
 
         public PredictionRigidbody predictionBody;
         
@@ -147,15 +147,12 @@ namespace TinyTanks.Tanks
 
         private void OnTick()
         {
-            model.transform.position = transform.position;
-            model.transform.rotation = transform.rotation;
-            
             RunInputs(CreateReplicateData());
         }
 
         private ReplicateData CreateReplicateData()
         {
-            if (!HasAuthority) return default;
+            if (!IsOwner) return default;
 
             var data = new ReplicateData();
 
@@ -170,14 +167,7 @@ namespace TinyTanks.Tanks
         [Replicate]
         private void RunInputs(ReplicateData data, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
         {
-            if (state.IsFuture())
-            {
-                data = lastValidReplicateData;
-            }
-            else if (state == ReplicateState.ReplayedCreated)
-            {
-                lastValidReplicateData = data;
-            }
+            if (state.IsFuture()) return;
             
             if (useSight != data.changeUseSight)
             {
@@ -289,14 +279,14 @@ namespace TinyTanks.Tanks
 
             sampleTrack(new[]
             {
-                transform.TransformPoint(-groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z),
-                transform.TransformPoint(-groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z),
+                transform.TransformPoint(-groundCheckPoint.x, 0f, groundCheckPoint.z),
+                transform.TransformPoint(-groundCheckPoint.x, 0f, -groundCheckPoint.z),
             }, leftTrackGroundSamples);
 
             sampleTrack(new[]
             {
-                transform.TransformPoint(groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z),
-                transform.TransformPoint(groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z),
+                transform.TransformPoint(groundCheckPoint.x, 0f, groundCheckPoint.z),
+                transform.TransformPoint(groundCheckPoint.x, 0f, -groundCheckPoint.z),
             }, rightTrackGroundSamples);
 
             void sampleTrack(Vector3[] points, Vector3[] samples)
@@ -304,10 +294,14 @@ namespace TinyTanks.Tanks
                 for (var i = 0; i < points.Length; i++)
                 {
                     var point = points[i];
-                    var distance = 0.2f;
+                    var distance = groundCheckPoint.y;
                     var ray = new Ray(point + transform.up * distance, -transform.up);
-                    if (Physics.Raycast(ray, out var hit, distance, groundCheckMask))
-                    {
+                    var hits = Physics.RaycastAll(ray, distance, groundCheckMask).OrderBy(e => e.distance);
+                    samples[i] = point;
+                    foreach (var hit in hits)
+                    { 
+                        if (hit.collider.transform.IsChildOf(transform)) continue;
+                        
                         onGround = true;
 
                         var velocity = body.GetPointVelocity(hit.point);
@@ -316,10 +310,7 @@ namespace TinyTanks.Tanks
                         predictionBody.AddForceAtPosition(force, hit.point);
 
                         samples[i] = hit.point;
-                    }
-                    else
-                    {
-                        samples[i] = point;
+                        break;
                     }
                 }
             }
@@ -349,14 +340,14 @@ namespace TinyTanks.Tanks
 
             var localAngularVelocity = transform.InverseTransformVector(body.angularVelocity);
             localAngularVelocity.y += (maxTurnSpeed * data.steering - localAngularVelocity.y) * 2f * Time.fixedDeltaTime / turnAccelerationTime;
-            body.angularVelocity = transform.TransformVector(localAngularVelocity);
+            body.AddTorque(transform.TransformVector(localAngularVelocity) - body.angularVelocity, ForceMode.VelocityChange);
 
             var newVelocity = transform.right * localVelX + transform.forward * localVelZ + Vector3.Project(body.linearVelocity, transform.up);
             newVelocity += Vector3.ProjectOnPlane(-Physics.gravity, transform.up) * Time.fixedDeltaTime;
             var force = (newVelocity - body.linearVelocity) / Time.fixedDeltaTime;
 
-            body.linearVelocity = newVelocity;
-            body.angularVelocity += (transform.forward * Vector3.Dot(force, transform.right) - transform.right * Vector3.Dot(force, transform.forward)) * moveTilt * Time.fixedDeltaTime;
+            predictionBody.AddForce(newVelocity - body.linearVelocity, ForceMode.VelocityChange);
+            predictionBody.AddTorque((transform.forward * Vector3.Dot(force, transform.right) - transform.right * Vector3.Dot(force, transform.forward)) * moveTilt, ForceMode.Acceleration);
         }
 
         private void Update()
@@ -371,8 +362,6 @@ namespace TinyTanks.Tanks
         {
             var graphicalObject = NetworkObject.GetGraphicalObject();
             if (graphicalObject == null) graphicalObject = transform;
-            model.transform.position = graphicalObject.position;
-            model.transform.rotation = graphicalObject.rotation;
         }
 
         private void AlignSight()
@@ -403,10 +392,10 @@ namespace TinyTanks.Tanks
             Gizmos.matrix = transform.localToWorldMatrix;
             Gizmos.color = Color.green;
 
-            Gizmos.DrawRay(new Vector3(groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z), Vector3.up);
-            Gizmos.DrawRay(new Vector3(-groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z), Vector3.up);
-            Gizmos.DrawRay(new Vector3(-groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z), Vector3.up);
-            Gizmos.DrawRay(new Vector3(groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z), Vector3.up);
+            Gizmos.DrawRay(new Vector3(groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z), Vector3.down * groundCheckPoint.y);
+            Gizmos.DrawRay(new Vector3(-groundCheckPoint.x, groundCheckPoint.y, groundCheckPoint.z), Vector3.down * groundCheckPoint.y);
+            Gizmos.DrawRay(new Vector3(-groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z), Vector3.down * groundCheckPoint.y);
+            Gizmos.DrawRay(new Vector3(groundCheckPoint.x, groundCheckPoint.y, -groundCheckPoint.z), Vector3.down * groundCheckPoint.y);
 
             Gizmos.color = new Color(1f, 1f, 1f, 0.5f);
             Gizmos.DrawWireCube(bounds.center, bounds.size);
