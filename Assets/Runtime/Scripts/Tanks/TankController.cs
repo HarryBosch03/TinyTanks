@@ -53,13 +53,13 @@ namespace TinyTanks.Tanks
         public CinemachineTankFollowCamera followCamera;
         public CinemachineCamera sightCamera;
 
-        private bool changeUseSight;
         private bool onGround;
         private Vector2 turretVelocity;
 
         public Rigidbody body { get; private set; }
         public TankModel model { get; private set; }
         public bool useSight { get; private set; }
+        public Vector2 cameraRotation { get; set; }
 
         public float throttle { get; set; }
         public float steering { get; set; }
@@ -98,7 +98,6 @@ namespace TinyTanks.Tanks
         private void Start()
         {
             useSight = false;
-            changeUseSight = false;
         }
 
         private void OnEnable()
@@ -130,12 +129,6 @@ namespace TinyTanks.Tanks
                 SendInputDataServerRpc(new InputData(this));
             }
             
-            if (useSight != changeUseSight)
-            {
-                useSight = changeUseSight;
-                UpdateCameraStates();
-            }
-
             CheckIfOnGround();
             MoveTank();
             RotateTurret();
@@ -175,7 +168,11 @@ namespace TinyTanks.Tanks
             model.gunPivot.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
         }
 
-        public void SetUseSight(bool useSight) => changeUseSight = useSight;
+        public void SetUseSight(bool useSight)
+        {
+            this.useSight = useSight;
+            UpdateCameraStates();
+        }
 
         private void UpdateCameraStates()
         {

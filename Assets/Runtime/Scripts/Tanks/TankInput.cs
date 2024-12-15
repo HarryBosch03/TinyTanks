@@ -17,7 +17,6 @@ namespace TinyTanks.Tanks
         public float gamepadSensitivity;
         public RectTransform cursor;
 
-        private Vector2 cameraRotation;
         private Vector2 cursorPosition;
         private Camera mainCamera;
         private CinemachineTankFollowCamera followCamera;
@@ -87,6 +86,7 @@ namespace TinyTanks.Tanks
                     if (gp.buttonSouth.wasPressedThisFrame) tank.SetUseSight(!tank.useSight);
                 }
 
+                var cameraRotation = tank.cameraRotation;
                 var sensitivityScaling = Mathf.Tan(mainCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
                 cameraRotation += cursorDelta * sensitivityScaling;
 
@@ -105,6 +105,8 @@ namespace TinyTanks.Tanks
 
                 followCamera.freeLookRotation = cameraRotation;
                 cursorPosition = mainCamera.WorldToScreenPoint(tank.worldAimPosition);
+
+                tank.cameraRotation = cameraRotation;
             }
 
             cursor.gameObject.SetActive(true);
