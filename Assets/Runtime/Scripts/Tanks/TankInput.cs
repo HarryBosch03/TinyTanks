@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
@@ -16,6 +17,7 @@ namespace TinyTanks.Tanks
         public float mouseTraverseSensitivity = 0.01f;
         public float gamepadSensitivity;
         public RectTransform cursor;
+        public ulong ownerId;
 
         private Vector2 cursorPosition;
         private Camera mainCamera;
@@ -23,11 +25,55 @@ namespace TinyTanks.Tanks
 
         public TankController tank { get; private set; }
 
+        public static TankInput localPlayer => all.FirstOrDefault(e => e.IsOwner);
+        public static List<TankInput> all { get; } = new List<TankInput>();
+
+        public void TakeOver()
+        {
+            TakeOverServerRpc();
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        private void TakeOverServerRpc(ServerRpcParams rpcParams = default)
+        {
+            if (enabled && IsOwner) return;
+
+            var clientId = rpcParams.Receive.SenderClientId;
+            var existingPlayer = all.Find(e => e.NetworkObject.OwnerClientId == clientId);
+            if (existingPlayer != null)
+            {
+                existingPlayer.NetworkObject.RemoveOwnership();
+                existingPlayer.SetEnabledClientRpc(false);
+            }
+
+            NetworkObject.ChangeOwnership(clientId);
+            SetEnabledClientRpc(true);
+            tank.SetActiveViewer(true);
+        }
+
         private void Awake()
         {
             tank = GetComponent<TankController>();
             followCamera = GetComponentInChildren<CinemachineTankFollowCamera>();
             mainCamera = Camera.main;
+        }
+
+        private void OnEnable()
+        {
+            all.Add(this);
+            if (IsServer) SetEnabledClientRpc(true);
+        }
+
+        private void OnDisable()
+        {
+            all.Remove(this);
+            if (IsServer) SetEnabledClientRpc(false);
+        }
+
+        [ClientRpc]
+        private void SetEnabledClientRpc(bool enabled)
+        {
+            this.enabled = enabled;
         }
 
         public override void OnNetworkSpawn()

@@ -11,6 +11,9 @@ namespace TinyTanks.CDM
         public Color baseColor = Color.white;
         public float flashFrameRate = 12f;
         public float flashBrightness = 6f;
+        public bool isCritical;
+        public bool requiredToDrive;
+        public bool requiredToShoot;
 
         private float alpha;
         private ICdmShape[] shapes;
@@ -35,13 +38,19 @@ namespace TinyTanks.CDM
             ICanBeDamaged.DamagedEvent += OnDamaged;
         }
 
-        private void OnDestroy()
+        public override void OnDestroy()
         {
             for (var i =0 ; i < renderers.Length; i++)
             {
                 renderers[i].SetPropertyBlock(new MaterialPropertyBlock());
             }
+            
+            base.OnDestroy();
         }
+
+        public void Destroy() => Damage(int.MaxValue);
+
+        public void FullRepair() => Repair(int.MaxValue);
 
         private void Update()
         {
@@ -52,6 +61,17 @@ namespace TinyTanks.CDM
             
             visibleTime -= Time.deltaTime;
             flashTime -= Time.deltaTime;
+        }
+
+        public void Repair(int health)
+        {
+            if (!IsServer) return;
+            if (!Application.isPlaying) return;
+
+            destroyed = false;
+            currentHealth += health;
+            if (currentHealth > maxHealth) currentHealth = maxHealth;
+            UpdateHealthClientRpc(currentHealth, destroyed);
         }
 
         public void Damage(int damage)

@@ -9,6 +9,7 @@ namespace TinyTanks.Tanks
         public TankWeapon weapon;
         public AnimationCurve curve = new AnimationCurve
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             keys = new[]
             {
                 new Keyframe
@@ -45,6 +46,7 @@ namespace TinyTanks.Tanks
                     outWeight = 0.3333333432674408f
                 }
             }
+#pragma warning restore CS0618 // Type or member is obsolete
         };
         public float duration = 0.6f;
         public float distance = 0.6f;
