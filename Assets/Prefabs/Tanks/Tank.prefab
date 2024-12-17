@@ -5277,7 +5277,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 505543093
+  GlobalObjectIdHash: 49383022
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -5303,11 +5303,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  controllerIndex: 0
+  controllerIndex: -1
   mouseCameraSensitivity: 0.3
   mouseTraverseSensitivity: 0.01
   gamepadSensitivity: 1
   cursor: {fileID: 8871656955955550185}
+  ownerId: 0
 --- !u!114 &5870096989387704085
 MonoBehaviour:
   m_ObjectHideFlags: 0

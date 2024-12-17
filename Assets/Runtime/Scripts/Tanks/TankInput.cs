@@ -54,7 +54,7 @@ namespace TinyTanks.Tanks
         private void Awake()
         {
             tank = GetComponent<TankController>();
-            followCamera = GetComponentInChildren<CinemachineTankFollowCamera>();
+            followCamera = GetComponentInChildren<CinemachineTankFollowCamera>(true);
             mainCamera = Camera.main;
         }
 

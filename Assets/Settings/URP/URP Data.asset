@@ -62,7 +62,8 @@ MonoBehaviour:
   - {fileID: 7833122117494664109}
   - {fileID: -8292562140390379585}
   - {fileID: -6324439824831049018}
-  m_RendererFeatureMap: ad6b866f10d7b46cbfaf2d50abe6ea8cc6929cd57c133ba8
+  - {fileID: 5741477280895359443}
+  m_RendererFeatureMap: ad6b866f10d7b46cbfaf2d50abe6ea8cc6929cd57c133ba8d359bed52ad3ad4f
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -88,6 +89,21 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 0
+--- !u!114 &5741477280895359443
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5f84398faad4cfb95b7d61d0be605d2, type: 3}
+  m_Name: DistortionRendererFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  intensity: 0.003
+  blitMaterial: {fileID: -876546973899608171, guid: 64e2449e70b7fd84880b26b950f448fe, type: 3}
 --- !u!114 &7833122117494664109
 MonoBehaviour:
   m_ObjectHideFlags: 0

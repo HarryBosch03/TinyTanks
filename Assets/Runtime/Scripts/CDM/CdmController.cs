@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TinyTanks.Health;
 using TinyTanks.Tanks;
 using TinyTanks.Utility;
@@ -18,6 +19,8 @@ namespace TinyTanks.CDM
 
         public bool canRicochet => true;
         public int defense => armorDefense;
+
+        public IEnumerable<CdmComponent> EnumerateComponents() => components;
 
         private void Awake()
         {
@@ -81,7 +84,9 @@ namespace TinyTanks.CDM
             report.entryRay = new Ray(source.origin, source.direction);
             report.exitRay = new Ray(source.hitPoint, (source.direction - source.hitNormal).normalized);
 
-            var angle = Mathf.Cos(Vector3.Dot(-source.hitNormal, source.direction)) * Mathf.Rad2Deg;
+            var angle = Vector3.Angle(-source.hitNormal, source.direction);
+
+            Debug.Log($"Ricochet Angle: {angle:0}deg");
             
             if (damage.damageClass < defense)
             {

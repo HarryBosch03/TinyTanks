@@ -6,6 +6,8 @@ namespace TinyTanks.Projectiles
 {
     public class Projectile : MonoBehaviour
     {
+        public const float RicochetDeviationAngleMax = 6f;
+        
         public DamageInstance damage;
         public float startSpeed;
         public float maxAge;
@@ -45,17 +47,19 @@ namespace TinyTanks.Projectiles
                 if (canBeDamaged != null)
                 {
                     canBeDamaged.Damage(damage, new DamageSource(shooter, ray, hit), out var report);
-                    if (!report.canPenetrate)
-                    {
-                        playHitFx = false;
-                        if (ricochetFx != null) Instantiate(ricochetFx, hit.point, Quaternion.LookRotation(hit.normal));
-                    }
-                    else if (report.didRicochet)
+                    if (report.didRicochet || !report.canPenetrate)
                     {
                         ricochet = true;
                         if (ricochetFx != null) Instantiate(ricochetFx, hit.point, Quaternion.LookRotation(hit.normal));
-                        position = report.exitRay.origin;
-                        velocity = report.exitRay.direction * velocity.magnitude;
+                        position = hit.point;
+                        velocity = Vector3.Reflect(velocity, hit.normal) * 0.5f;
+
+                        var devianceDirection = Quaternion.LookRotation(velocity.normalized);
+                        devianceDirection *= Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
+                        devianceDirection *= Quaternion.Euler(Random.Range(-1f, 1f) * RicochetDeviationAngleMax, 0f, 0f);
+
+                        velocity = (devianceDirection * Vector3.forward) * velocity.magnitude;
+                        position -= velocity * Time.fixedDeltaTime * 0.99f;
                     }
                 }
 

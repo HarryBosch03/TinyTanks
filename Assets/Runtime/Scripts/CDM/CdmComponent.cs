@@ -11,6 +11,7 @@ namespace TinyTanks.CDM
         public Color baseColor = Color.white;
         public float flashFrameRate = 12f;
         public float flashBrightness = 6f;
+        public bool isFlesh;
         public bool isCritical;
         public bool requiredToDrive;
         public bool requiredToShoot;
