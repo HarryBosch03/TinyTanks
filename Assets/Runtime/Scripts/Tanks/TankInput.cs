@@ -68,6 +68,7 @@ namespace TinyTanks.Tanks
                     if (m.rightButton.wasReleasedThisFrame) tank.StopShooting(1);
 
                     if (kb.leftShiftKey.wasPressedThisFrame) tank.SetUseSight(!tank.useSight);
+                    if (kb.cKey.wasPressedThisFrame) tank.ToggleSightZoom();
 
                     cursorDelta = Mouse.current.delta.ReadValue() * mouseCameraSensitivity;
                 }

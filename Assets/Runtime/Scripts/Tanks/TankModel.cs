@@ -15,6 +15,7 @@ namespace TinyTanks.Tanks
         public Transform gunPivot;
         public Transform gunMuzzle;
         public Transform gunBarrel;
+        public Transform coaxBarrel;
         public Transform coaxMuzzle;
 
         private void Awake()
@@ -48,6 +49,7 @@ namespace TinyTanks.Tanks
                 {
                     if (gunPivot == null) gunPivot = turret.Find("GunPivot");
                     if (gunMuzzle == null) gunMuzzle = turret.Find("GunPivot/GunBarrel/GunMuzzle");
+                    if (coaxBarrel == null) coaxBarrel = turret.Find("GunPivot/CoaxBarrel");
                     if (coaxMuzzle == null) coaxMuzzle = turret.Find("GunPivot/CoaxBarrel/CoaxMuzzle");
                     if (gunBarrel == null) gunBarrel = turret.Find("GunPivot/GunBarrel");
                 }

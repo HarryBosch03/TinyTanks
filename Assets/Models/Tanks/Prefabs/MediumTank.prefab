@@ -52,9 +52,8 @@ MonoBehaviour:
   gunPivot: {fileID: 4135030344725983751}
   gunMuzzle: {fileID: 407012884807963028}
   gunBarrel: {fileID: 3230986775706733146}
+  coaxBarrel: {fileID: 8065241884463761233}
   coaxMuzzle: {fileID: 2195597466051062369}
-  leftTrack: {fileID: 7711961794771399465}
-  rightTrack: {fileID: 2232952253640364888}
 --- !u!1001 &1485822378750333576
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -225,11 +224,6 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 7270243598187205144, guid: 54e3c1640f4716a4b8cfe48acef03383, type: 3}
---- !u!4 &2232952253640364888 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 748646105991414224, guid: e803a288ed37f3c4fbd767f00d49fce6, type: 3}
-  m_PrefabInstance: {fileID: 1485822378750333576}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2608215579756315613 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3507334155610263893, guid: e803a288ed37f3c4fbd767f00d49fce6, type: 3}
@@ -596,11 +590,6 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 5512361600001258384, guid: 54e3c1640f4716a4b8cfe48acef03383, type: 3}
---- !u!4 &7711961794771399465 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 9194336066378064289, guid: e803a288ed37f3c4fbd767f00d49fce6, type: 3}
-  m_PrefabInstance: {fileID: 1485822378750333576}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &8053718492181823798 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8888484815104594878, guid: e803a288ed37f3c4fbd767f00d49fce6, type: 3}
@@ -774,5 +763,10 @@ Transform:
 --- !u!4 &5553238660693427882 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8638258654835271991, guid: 55302ecf569be9740b4eac14f8938248, type: 3}
+  m_PrefabInstance: {fileID: 4246986090814074781}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8065241884463761233 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6133108407868057804, guid: 55302ecf569be9740b4eac14f8938248, type: 3}
   m_PrefabInstance: {fileID: 4246986090814074781}
   m_PrefabAsset: {fileID: 0}

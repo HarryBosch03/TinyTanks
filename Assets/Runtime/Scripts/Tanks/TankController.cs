@@ -53,9 +53,13 @@ namespace TinyTanks.Tanks
         [Space]
         public CinemachineTankFollowCamera followCamera;
         public CinemachineCamera sightCamera;
+        public float[] sightZoomLevels = { 1f, 2f };
+        public float sightZoomTime = 0.3f;
 
         private bool onGround;
         private Vector2 turretVelocity;
+        private int sightZoomLevelIndex;
+        private float sightDefaultFov;
 
         public Rigidbody body { get; private set; }
         public TankModel model { get; private set; }
@@ -68,6 +72,7 @@ namespace TinyTanks.Tanks
         public Vector2 turretTarget { get; private set; }
         public Vector3 worldAimPosition { get; set; }
         public bool isActiveViewer { get; private set; }
+        public float sightZoom { get; set; }
 
         public static List<TankController> all = new List<TankController>();
 
@@ -94,6 +99,9 @@ namespace TinyTanks.Tanks
             rightTrackGroundSamples[1] = transform.TransformPoint(groundCheckPoint.x, 0f, -groundCheckPoint.z);
             
             SetActiveViewer(false);
+
+            sightDefaultFov = sightCamera.Lens.FieldOfView;
+            worldAimPosition = model.gunMuzzle.position + model.gunMuzzle.forward;
         }
 
         private void Start()
@@ -172,6 +180,17 @@ namespace TinyTanks.Tanks
         public void SetUseSight(bool useSight)
         {
             this.useSight = useSight;
+            if (useSight)
+            {
+                sightZoomLevelIndex = 0;
+                sightCamera.Lens.FieldOfView = sightDefaultFov;
+            }
+            UpdateCameraStates();
+        }
+        
+        public void ToggleSightZoom()
+        {
+            if (useSight) sightZoomLevelIndex++;
             UpdateCameraStates();
         }
 
@@ -218,6 +237,14 @@ namespace TinyTanks.Tanks
             turretVelocity.y = Mathf.Clamp(turretVelocity.y, -maxTraverseSpeed, maxTraverseSpeed);
 
             turretRotation = ClampTurretRotation(turretRotation);
+
+            MoveCoax();
+        }
+
+        private void MoveCoax()
+        {
+            var coax = model.coaxBarrel;
+            coax.LookAt(worldAimPosition, transform.up);
         }
 
         private Vector2 ClampTurretRotation(Vector2 turretRotation)
@@ -306,6 +333,19 @@ namespace TinyTanks.Tanks
         {
             AlignSight();
 
+            if (useSight)
+            {
+                sightZoomLevelIndex = (sightZoomLevelIndex % sightZoomLevels.Length + sightZoomLevels.Length) % sightZoomLevels.Length;
+                var zoom = sightZoomLevels[sightZoomLevelIndex];
+                var fov = Mathf.Atan(Mathf.Tan(sightDefaultFov * 0.5f * Mathf.Deg2Rad) / zoom) * 2f * Mathf.Rad2Deg;
+                sightCamera.Lens.FieldOfView = Mathf.Lerp(sightCamera.Lens.FieldOfView, fov, 2f * Time.deltaTime / sightZoomTime);
+                sightZoom = Mathf.Tan(sightDefaultFov * 0.5f * Mathf.Deg2Rad) / Mathf.Tan(sightCamera.Lens.FieldOfView * 0.5f * Mathf.Deg2Rad);
+            }
+            else
+            {
+                sightZoom = 1f;
+            }
+
             model.turretMount.localRotation = Quaternion.Euler(0f, turretRotation.x, 0f);
             model.gunPivot.localRotation = Quaternion.Euler(-turretRotation.y, 0f, 0f);
         }
@@ -338,6 +378,9 @@ namespace TinyTanks.Tanks
         private void OnValidate()
         {
             wheelsPerTrack = Mathf.Max(wheelsPerTrack, 2);
+            if (sightZoomLevels == null || sightZoomLevels.Length == 0) sightZoomLevels = new float[1];
+            sightZoomLevels[0] = 1f;
+            for (var i = 1; i < sightZoomLevels.Length; i++) sightZoomLevels[i] = Mathf.Max(sightZoomLevels[i], 1f);
         }
 
         public struct InputData : INetworkSerializable
