@@ -385,19 +385,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -2
+      value: 2.3859
       objectReference: {fileID: 0}
     - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.8000005
+      value: 0.5095005
       objectReference: {fileID: 0}
     - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 10.15
+      value: 29.4123
       objectReference: {fileID: 0}
     - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: 0.70710725
       objectReference: {fileID: 0}
     - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: m_LocalRotation.x
@@ -405,7 +405,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0.7071064
       objectReference: {fileID: 0}
     - target: {fileID: 1983163992035116510, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: m_LocalRotation.z
@@ -429,11 +429,11 @@ PrefabInstance:
       objectReference: {fileID: 5001331200970937790}
     - target: {fileID: 5232737888222145684, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: field of view
-      value: 60
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 5232737888222145684, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: near clip plane
-      value: 0.3
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 5903486687587973799, guid: c3839e289ad77e644916b8bfcb41fcc8, type: 3}
       propertyPath: GlobalObjectIdHash

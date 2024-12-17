@@ -16,8 +16,6 @@ namespace TinyTanks.Tanks
         public Transform gunMuzzle;
         public Transform gunBarrel;
         public Transform coaxMuzzle;
-        public Transform leftTrack;
-        public Transform rightTrack;
 
         private void Awake()
         {
@@ -44,8 +42,6 @@ namespace TinyTanks.Tanks
                 if (body != null)
                 {
                     if (turretMount == null) turretMount = body.Find("TurretMount");
-                    if (leftTrack == null) leftTrack = body.Find("Track.L");
-                    if (rightTrack == null) rightTrack = body.Find("Track.R");
                 }
 
                 if (turret != null)

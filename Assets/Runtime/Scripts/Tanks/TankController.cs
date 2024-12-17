@@ -31,6 +31,7 @@ namespace TinyTanks.Tanks
         [Space]
         public float suspensionSpring = 30f;
         public float suspensionDamping = 3f;
+        public float suspensionExtension;
 
         [Space]
         public LayerMask groundCheckMask;
@@ -246,8 +247,8 @@ namespace TinyTanks.Tanks
                 {
                     var percent = i / (samples.Length - 1f);
                     var point = Vector3.Lerp(start, end, percent);
-                    var distance = groundCheckPoint.y;
-                    var ray = new Ray(point + transform.up * distance, -transform.up);
+                    var distance = groundCheckPoint.y + suspensionExtension;
+                    var ray = new Ray(point + transform.up * groundCheckPoint.y, -transform.up);
                     var hits = Physics.RaycastAll(ray, distance, groundCheckMask).OrderBy(e => e.distance);
                     samples[i] = point;
                     foreach (var hit in hits)
@@ -257,8 +258,7 @@ namespace TinyTanks.Tanks
                         onGround = true;
 
                         var velocity = body.GetPointVelocity(hit.point);
-                        var force = ((hit.point - point) * suspensionSpring - velocity * suspensionDamping) * body.mass;
-                        force = Vector3.Project(force, hit.normal);
+                        var force = hit.normal * ((distance - hit.distance) * suspensionSpring - Vector3.Dot(hit.normal, velocity) * suspensionDamping) * body.mass;
                         body.AddForceAtPosition(force, hit.point);
 
                         samples[i] = hit.point;
