@@ -1,4 +1,6 @@
+using System;
 using TinyTanks.Health;
+using TinyTanks.Tanks;
 using TinyTanks.Utility;
 using Unity.Netcode;
 using UnityEngine;
@@ -10,6 +12,7 @@ namespace TinyTanks.CDM
         public int armorDefense;
         public ParticleSystem spallParticles;
 
+        private TankController tank;
         private CdmComponent[] components;
         private Collider[] collision;
 
@@ -20,6 +23,46 @@ namespace TinyTanks.CDM
         {
             collision = GetComponentsInChildren<Collider>();
             components = GetComponentsInChildren<CdmComponent>();
+            tank = GetComponentInParent<TankController>();
+        }
+
+        private void OnEnable()
+        {
+            tank.SetIsDestroyedEvent += OnSetIsDestroyed;
+        }
+
+        private void OnDisable()
+        {
+            tank.SetIsDestroyedEvent += OnSetIsDestroyed;
+        }
+
+        private void OnSetIsDestroyed(bool isDestroyed)
+        {
+            foreach (var c in components)
+            {
+                if (isDestroyed) c.Destroy();
+                else c.FullRepair();
+
+                CheckDamagedComponents();
+            }
+        }
+
+        private void CheckDamagedComponents()
+        {
+            var canDrive = true;
+            var canShoot = true;
+
+            foreach (var c in components)
+            {
+                if (c.destroyed)
+                {
+                    if (c.requiredToDrive) canDrive = false;
+                    if (c.requiredToShoot) canShoot = false;
+                }
+            }
+
+            tank.SetCanDrive(canDrive);
+            tank.SetCanShoot(canShoot);
         }
 
         public void Damage(DamageInstance damage, DamageSource source, out ICanBeDamaged.DamageReport report)
@@ -99,6 +142,21 @@ namespace TinyTanks.CDM
                     {
                         spall.hitComponent = hitComponent.name;
                         hitComponent.Damage(1);
+                        if (hitComponent.destroyed)
+                        {
+                            if (hitComponent.isCritical)
+                            {
+                                tank.SetIsDestroyed(true);
+                            }
+                            if (hitComponent.requiredToDrive)
+                            {
+                                tank.SetCanDrive(false);
+                            }
+                            if (hitComponent.requiredToShoot)
+                            {
+                                tank.SetCanShoot(false);
+                            }
+                        }
                         
                         if (spallParticles != null)
                         {
@@ -130,5 +188,7 @@ namespace TinyTanks.CDM
 
             return null;
         }
+
+        public void DestroyTank() => tank.SetIsDestroyed(true);
     }
 }

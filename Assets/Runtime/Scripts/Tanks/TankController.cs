@@ -57,6 +57,11 @@ namespace TinyTanks.Tanks
         private bool onGround;
         private Vector2 turretVelocity;
 
+        public event Action<bool> SetIsDestroyedEvent;
+
+        public bool isDestroyed { get; private set; }
+        public bool canDrive { get; private set; }
+        public bool canShoot { get; private set; }
         public Rigidbody body { get; private set; }
         public TankModel model { get; private set; }
         public bool useSight { get; private set; }
@@ -67,13 +72,30 @@ namespace TinyTanks.Tanks
         public Vector2 turretRotation { get; private set; }
         public Vector2 turretTarget { get; private set; }
         public Vector3 worldAimPosition { get; set; }
-        public bool isActiveViewer { get; private set; }
+        public bool isActiveViewer => activeViewer == this;
+        
+        public static TankController activeViewer { get; private set; }
 
         public static List<TankController> all = new List<TankController>();
 
         public Vector3[] leftTrackGroundSamples { get; private set; }
         public Vector3[] rightTrackGroundSamples { get; private set; }
 
+        public void SetCanShoot(bool canShoot) => SetCanShootRpc(canShoot);
+        [Rpc(SendTo.Everyone)]
+        private void SetCanShootRpc(bool canShoot) => this.canShoot = canShoot;
+
+        public void SetCanDrive(bool canDrive) => SetCanDriveRpc(canDrive);
+        [Rpc(SendTo.Everyone)]
+        private void SetCanDriveRpc(bool canDrive) => this.canDrive = canDrive;
+
+        public void SetIsDestroyed(bool isDestroyed)
+        {
+            if (this.isDestroyed == isDestroyed) return;
+            this.isDestroyed = isDestroyed;
+            SetIsDestroyedEvent?.Invoke(isDestroyed);
+        }
+        
         private void Awake()
         {
             body = GetComponent<Rigidbody>();
@@ -104,6 +126,9 @@ namespace TinyTanks.Tanks
         private void OnEnable()
         {
             all.Add(this);
+            
+            canDrive = true;
+            canShoot = true;
         }
 
         private void OnDisable() { all.Remove(this); }
@@ -118,7 +143,16 @@ namespace TinyTanks.Tanks
         
         public void SetActiveViewer(bool isActiveViewer)
         {
-            this.isActiveViewer = isActiveViewer;
+            if (isActiveViewer)
+            {
+                if (activeViewer != null) activeViewer.SetActiveViewer(false);
+                activeViewer = this;
+            }
+            else
+            {
+                if (activeViewer == this) activeViewer = null;
+            }
+            
             hud.gameObject.SetActive(isActiveViewer);
             UpdateCameraStates();
         }
@@ -131,7 +165,7 @@ namespace TinyTanks.Tanks
             }
             
             CheckIfOnGround();
-            MoveTank();
+            Move();
             RotateTurret();
             AlignSight();
 
@@ -201,16 +235,20 @@ namespace TinyTanks.Tanks
 
         private void MoveTurret()
         {
-            var worldVector = (worldAimPosition - model.gunPivot.position).normalized;
-            var localVector = transform.InverseTransformDirection(worldVector);
-            var rotation = Quaternion.LookRotation(localVector, Vector3.up);
-            turretTarget = new Vector2(rotation.eulerAngles.y, -rotation.eulerAngles.x);
-
-            var delta = new Vector2()
+            var delta = Vector2.zero;
+            if (!isDestroyed)
             {
-                x = Mathf.DeltaAngle(turretRotation.x, turretTarget.x),
-                y = Mathf.DeltaAngle(turretRotation.y, turretTarget.y),
-            };
+                var worldVector = (worldAimPosition - model.gunPivot.position).normalized;
+                var localVector = transform.InverseTransformDirection(worldVector);
+                var rotation = Quaternion.LookRotation(localVector, Vector3.up);
+                turretTarget = new Vector2(rotation.eulerAngles.y, -rotation.eulerAngles.x);
+                
+                delta = new Vector2()
+                {
+                    x = Mathf.DeltaAngle(turretRotation.x, turretTarget.x),
+                    y = Mathf.DeltaAngle(turretRotation.y, turretTarget.y),
+                };
+            }
 
             turretRotation += turretVelocity * Time.fixedDeltaTime;
             turretVelocity += (delta * traverseSpeedSpring - turretVelocity * traverseSpeedDamping) * Time.fixedDeltaTime;
@@ -268,13 +306,21 @@ namespace TinyTanks.Tanks
             }
         }
 
-        private void MoveTank()
+        private void Move()
         {
             if (!onGround) return;
 
+            var throttle = this.throttle;
+            var steering = this.steering;
+            if (isDestroyed || !canDrive)
+            {
+                throttle = 0f;
+                steering = 0f;
+            }
+            
             var localVelX = Vector3.Dot(transform.right, body.linearVelocity);
             var localVelZ = Vector3.Dot(transform.forward, body.linearVelocity);
-
+            
             var maxSpeed = throttle > 0f ? maxFwdSpeed : maxReverseSpeed;
             if (Mathf.Abs(throttle * maxSpeed) > Mathf.Abs(localVelZ))
             {
@@ -312,7 +358,10 @@ namespace TinyTanks.Tanks
 
         private void AlignSight()
         {
-            sightCamera.transform.rotation = Quaternion.LookRotation(worldAimPosition - sightCamera.transform.position, transform.up);
+            if (!isDestroyed)
+            {   
+                sightCamera.transform.rotation = Quaternion.LookRotation(worldAimPosition - sightCamera.transform.position, transform.up);
+            }
         }
 
         private void OnDrawGizmosSelected()

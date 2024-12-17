@@ -62,25 +62,32 @@ namespace TinyTanks.Tanks
 
         private void FixedUpdate()
         {
-            if (shooting && !isReloading)
+            if (!tank.canShoot || tank.isDestroyed)
             {
-                var instance = Instantiate(projectile, muzzle.position, muzzle.rotation);
-
-                instance.shooter = tank.NetworkObject;
-                instance.damage = damage;
-                instance.startSpeed = projectileSpeed;
-
-                instance.velocity += body.GetPointVelocity(muzzle.position);
-                WeaponFiredEvent?.Invoke();
-
-                reloadTimer = fireDelay;
-                tank.body.AddForceAtPosition(-muzzle.forward * recoilForce, muzzle.position, ForceMode.VelocityChange);
-
-                if (fireFx != null && !(tank.isActiveViewer && tank.sightCamera)) fireFx.Play(true);
-                if (!automatic) shooting = false;
+                shooting = false;
             }
-
-            reloadTimer -= Time.fixedDeltaTime;
+            else
+            {
+                if (shooting && !isReloading)
+                {
+                    var instance = Instantiate(projectile, muzzle.position, muzzle.rotation);
+    
+                    instance.shooter = tank.NetworkObject;
+                    instance.damage = damage;
+                    instance.startSpeed = projectileSpeed;
+    
+                    instance.velocity += body.GetPointVelocity(muzzle.position);
+                    WeaponFiredEvent?.Invoke();
+    
+                    reloadTimer = fireDelay;
+                    tank.body.AddForceAtPosition(-muzzle.forward * recoilForce, muzzle.position, ForceMode.VelocityChange);
+    
+                    if (fireFx != null && !(tank.isActiveViewer && tank.sightCamera)) fireFx.Play(true);
+                    if (!automatic) shooting = false;
+                }
+    
+                reloadTimer -= Time.fixedDeltaTime;
+            }
         }
 
         public Vector3 PredictProjectileArc()
