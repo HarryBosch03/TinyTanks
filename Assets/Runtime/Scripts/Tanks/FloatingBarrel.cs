@@ -6,7 +6,7 @@ namespace TinyTanks.Tanks
     [RequireComponent(typeof(TankWeapon))]
     public class FloatingBarrel : MonoBehaviour
     {
-        public AnimationCurve animation;
+        public new AnimationCurve animation;
         public float duration = 0.4f;
         public float distance = 0f;
         

@@ -56,12 +56,16 @@ namespace TinyTanks.Tanks
         public float[] sightZoomLevels = { 1f, 2f };
         public float sightZoomTime = 0.3f;
 
+        [Space]
+        public ParticleSystem explosionFx;
+
         private bool onGround;
         private Vector2 turretVelocity;
         private int sightZoomLevelIndex;
         private float sightDefaultFov;
 
         public event Action<bool> SetIsDestroyedEvent;
+        public event Action<bool> ActiveViewerChangedEvent;
 
         public bool isDestroyed { get; private set; }
         public bool canDrive { get; private set; }
@@ -96,11 +100,21 @@ namespace TinyTanks.Tanks
 
         public void SetIsDestroyed(bool isDestroyed)
         {
+            if (!IsServer) return;
+            SetIsDestroyedRpc(isDestroyed);
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void SetIsDestroyedRpc(bool isDestroyed)
+        {    
             if (this.isDestroyed == isDestroyed) return;
             this.isDestroyed = isDestroyed;
             SetIsDestroyedEvent?.Invoke(isDestroyed);
+            if (isDestroyed) explosionFx.Play();
+            model.gameObject.SetActive(!isDestroyed);
+            body.isKinematic = isDestroyed;
         }
-        
+
         private void Awake()
         {
             body = GetComponent<Rigidbody>();
@@ -162,6 +176,7 @@ namespace TinyTanks.Tanks
             }
             
             hud.gameObject.SetActive(isActiveViewer);
+            ActiveViewerChangedEvent?.Invoke(isActiveViewer);
             UpdateCameraStates();
         }
 
@@ -193,11 +208,16 @@ namespace TinyTanks.Tanks
         [ClientRpc(Delivery = RpcDelivery.Unreliable)]
         private void SendNetworkStateClientRpc(NetworkState state)
         {
+            if (state.isDestroyed != isDestroyed) SetIsDestroyed(state.isDestroyed);
+
             transform.position = state.position;
             transform.rotation = state.rotation;
 
-            body.linearVelocity = state.linearVelocity;
-            body.angularVelocity = state.angularVelocity;
+            if (!body.isKinematic)
+            {
+                body.linearVelocity = state.linearVelocity;
+                body.angularVelocity = state.angularVelocity;
+            }
 
             turretRotation = state.turretRotation;
             turretVelocity = state.turretVelocity;
@@ -461,6 +481,7 @@ namespace TinyTanks.Tanks
             public Vector3 angularVelocity;
             public Vector2 turretRotation;
             public Vector2 turretVelocity;
+            public bool isDestroyed;
 
             public NetworkState(TankController tank)
             {
@@ -472,6 +493,8 @@ namespace TinyTanks.Tanks
 
                 turretRotation = tank.turretRotation;
                 turretVelocity = tank.turretVelocity;
+
+                isDestroyed = tank.isDestroyed;
             }
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -482,6 +505,7 @@ namespace TinyTanks.Tanks
                 serializer.SerializeValue(ref angularVelocity);
                 serializer.SerializeValue(ref turretRotation);
                 serializer.SerializeValue(ref turretVelocity);
+                serializer.SerializeValue(ref isDestroyed);
             }
         }
     }

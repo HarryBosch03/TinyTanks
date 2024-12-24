@@ -34,8 +34,6 @@ namespace TinyTanks.Tanks
             var t = enabledTime / fovLerpTime;
             t = -1f / (10f * t + 1f) + 1f;
             if (Application.isPlaying && float.IsFinite(t)) curState.Lens.FieldOfView = Mathf.Lerp(curState.Lens.FieldOfView * 0.5f, curState.Lens.FieldOfView, t);
-
-            float sqr(float x) => x * x;
         }
 
         public override bool IsValid => target != null;

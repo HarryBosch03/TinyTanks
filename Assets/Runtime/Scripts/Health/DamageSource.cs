@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace TinyTanks.Health
 {
@@ -10,15 +11,19 @@ namespace TinyTanks.Health
         public Vector3 direction;
         public Vector3 hitPoint;
         public Vector3 hitNormal;
+        public float impactAngle;
 
-        public DamageSource(NetworkObject invoker, Ray ray, RaycastHit hit)
+        public DamageSource(NetworkObject invoker, Ray ray, RaycastHit hit, float impactAngle)
         {
             this.invoker = invoker;
             
             origin = ray.origin;
             direction = ray.direction;
+            
             hitPoint = hit.point;
             hitNormal = hit.normal;
+            
+            this.impactAngle = impactAngle;
         }
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -28,6 +33,7 @@ namespace TinyTanks.Health
             serializer.SerializeValue(ref direction);
             serializer.SerializeValue(ref hitPoint);
             serializer.SerializeValue(ref hitNormal);
+            serializer.SerializeValue(ref impactAngle);
         }
     }
 }

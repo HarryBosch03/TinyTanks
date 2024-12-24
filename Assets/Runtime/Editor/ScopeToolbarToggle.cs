@@ -37,41 +37,9 @@ public class ScopeToolbarToggle : EditorToolbarToggle
     }
 }
 
-[EditorToolbarElement(Id, typeof(SceneView))]
-public class CdmToolbarToggle : EditorToolbarToggle
-{
-    public const string Id = "Custom/Toggle Cdm";
-
-    public CdmToolbarToggle()
-    {
-        text = "Toggle Cdm";
-        tooltip = "Toggles Cdm Render Feature";
-        value = GetFeature().renderInScene;
-    }
-
-    protected override void ToggleValue()
-    {
-        base.ToggleValue();
-        GetFeature().renderInScene = value;
-    }
-
-    public CdmRendererFeature GetFeature()
-    {
-        var allFeatures = AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GUIDToAssetPath("f288ae1f4751b564a96ac7587541f7a2"));
-        foreach (var feature in allFeatures)
-        {
-            if (feature is CdmRendererFeature cdmRendererFeature && cdmRendererFeature.name == "CdmRendererFeature")
-            {
-                return cdmRendererFeature;
-            }
-        }
-        return null;
-    }
-}
-
 //[Icon("")]
 [Overlay(typeof(SceneView), "Custom Tools")]
 public class CustomEditorToolbar : ToolbarOverlay
 {
-    private CustomEditorToolbar() : base(ScopeToolbarToggle.Id, CdmToolbarToggle.Id) { }
+    private CustomEditorToolbar() : base(ScopeToolbarToggle.Id) { }
 }

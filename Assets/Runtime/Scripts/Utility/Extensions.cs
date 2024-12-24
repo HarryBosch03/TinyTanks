@@ -13,5 +13,7 @@ namespace TinyTanks.Utility
             var c = array.Length;
             return array[(i % c + c) % c];
         }
+
+        public static Color Invert(this Color color) => new(1f - color.r, 1f - color.g, 1f - color.b, 1f);
     }
 }

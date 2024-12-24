@@ -1,3 +1,4 @@
+using System.Diagnostics.Tracing;
 using TinyTanks.Health;
 using Unity.Netcode;
 using UnityEngine;
@@ -11,8 +12,6 @@ namespace TinyTanks.Projectiles
         public DamageInstance damage;
         public float startSpeed;
         public float maxAge;
-        public float maxAngleBeforeRicochet = 60f;
-        public float directHitAngle = 8f;
         public GameObject hitFx;
         public GameObject ricochetFx;
 
@@ -46,8 +45,9 @@ namespace TinyTanks.Projectiles
                 var canBeDamaged = hit.collider.GetComponentInParent<ICanBeDamaged>();
                 if (canBeDamaged != null)
                 {
-                    canBeDamaged.Damage(damage, new DamageSource(shooter, ray, hit), out var report);
-                    if (report.didRicochet || !report.canPenetrate)
+                    var angle = Vector3.Angle(ray.direction, -hit.normal);
+                    canBeDamaged.Damage(damage, new DamageSource(shooter, ray, hit, angle), out var report);
+                    if (report.finalDamage <= 1)
                     {
                         ricochet = true;
                         if (ricochetFx != null) Instantiate(ricochetFx, hit.point, Quaternion.LookRotation(hit.normal));
