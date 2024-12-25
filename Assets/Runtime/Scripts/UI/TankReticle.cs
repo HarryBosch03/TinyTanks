@@ -41,7 +41,7 @@ namespace TinyTanks.UI
             offset = GetOffset();
             smoothedOffset = Vector2.Lerp(smoothedOffset, offset, Time.deltaTime / Mathf.Max(Time.deltaTime, offsetSmoothing));
             transform.position = new Vector3(smoothedOffset.x, smoothedOffset.y, transform.position.z);
-            scopeFeature.passMaterial.SetVector("_Offset", smoothedOffset - new Vector2(Screen.width, Screen.height) / 2f);
+            Shader.SetGlobalVector("_ScopeOffset", smoothedOffset - new Vector2(Screen.width, Screen.height) / 2f);
 
             transform.localScale = Vector3.one * tank.sightZoom;
         }

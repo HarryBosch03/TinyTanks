@@ -31,6 +31,13 @@ namespace TinyTanks.Health
             health = GetComponentInParent<TankHealthController>();
             restPosition = transform.localPosition;
             mainCamera = Camera.main;
+
+            tank.SetIsDestroyedEvent += OnSetIsDestroyed;
+        }
+
+        private void OnSetIsDestroyed(bool isDestroyed)
+        {
+            gameObject.SetActive(!isDestroyed);
         }
 
         private void OnEnable()

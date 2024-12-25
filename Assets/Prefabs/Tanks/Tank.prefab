@@ -10890,7 +10890,7 @@ MonoBehaviour:
   displayName: 120mm Cannon
   icon: {fileID: 21300000, guid: 772b9e5795f19e347b5e765f9a9ad88e, type: 3}
   projectile: {fileID: 5331638167734849736, guid: 7d9f04090572f1b4992b290da71ec78d, type: 3}
-  fireDelay: 3
+  fireDelay: 1.8
   damage:
     damageClass: 5
     damageAmount: 60
@@ -11047,7 +11047,7 @@ MonoBehaviour:
   offset: {x: 0, y: 0.8, z: -2}
   fovLerpTime: 0.4
   freeLookRotation: {x: 0, y: 0}
-  enabledTime: 17.818743
+  enabledTime: 10.17232
 --- !u!1 &4516382762433718438
 GameObject:
   m_ObjectHideFlags: 0

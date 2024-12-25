@@ -45,6 +45,9 @@ namespace TinyTanks.Tanks
         public Vector2 turretLimitY;
 
         [Space]
+        public float counterRollForce;
+
+        [Space]
         public Bounds bounds;
 
         [Space]
@@ -63,6 +66,8 @@ namespace TinyTanks.Tanks
         private Vector2 turretVelocity;
         private int sightZoomLevelIndex;
         private float sightDefaultFov;
+        private float counterRollAccumilator;
+        private bool isOutOfBounds;
 
         public event Action<bool> SetIsDestroyedEvent;
         public event Action<bool> ActiveViewerChangedEvent;
@@ -191,10 +196,24 @@ namespace TinyTanks.Tanks
             Move();
             RotateTurret();
             AlignSight();
+            DoCounterRoll();
 
             body.AddForce(Physics.gravity, ForceMode.Acceleration);
 
             if (IsServer) SendNetworkStateClientRpc(new NetworkState(this));
+        }
+
+        private void DoCounterRoll()
+        {
+            if (!onGround && Mathf.Abs(body.linearVelocity.y) < 0.1f)
+            {
+                counterRollAccumilator += counterRollForce * Time.deltaTime;
+                body.AddTorque(transform.forward * counterRollAccumilator, ForceMode.Acceleration);
+            }
+            else
+            {
+                counterRollAccumilator = 0f;
+            }
         }
 
         [ServerRpc(Delivery = RpcDelivery.Unreliable)]
@@ -302,7 +321,9 @@ namespace TinyTanks.Tanks
         private void MoveCoax()
         {
             var coax = model.coaxBarrel;
-            coax.LookAt(worldAimPosition, transform.up);
+            var ray = new Ray(model.gunMuzzle.position, model.gunMuzzle.forward);
+            var aimDistance = (worldAimPosition - ray.origin).magnitude;
+            coax.LookAt(ray.GetPoint(aimDistance), transform.up);
         }
 
         private Vector2 ClampTurretRotation(Vector2 turretRotation)
@@ -473,6 +494,11 @@ namespace TinyTanks.Tanks
             }
         }
         
+        public void SetIsOutOfBounds(bool isOutOfBounds)
+        {
+            
+        }
+        
         public struct NetworkState : INetworkSerializable
         {
             public Vector3 position;
@@ -482,6 +508,8 @@ namespace TinyTanks.Tanks
             public Vector2 turretRotation;
             public Vector2 turretVelocity;
             public bool isDestroyed;
+            public float counterRollAccumilator;
+            public bool isOutOfBounds;
 
             public NetworkState(TankController tank)
             {
@@ -495,6 +523,8 @@ namespace TinyTanks.Tanks
                 turretVelocity = tank.turretVelocity;
 
                 isDestroyed = tank.isDestroyed;
+                counterRollAccumilator = tank.counterRollAccumilator;
+                isOutOfBounds = tank.isOutOfBounds;
             }
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -506,6 +536,7 @@ namespace TinyTanks.Tanks
                 serializer.SerializeValue(ref turretRotation);
                 serializer.SerializeValue(ref turretVelocity);
                 serializer.SerializeValue(ref isDestroyed);
+                serializer.SerializeValue(ref counterRollAccumilator);
             }
         }
     }
