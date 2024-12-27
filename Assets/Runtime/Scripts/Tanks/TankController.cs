@@ -56,6 +56,7 @@ namespace TinyTanks.Tanks
         [Space]
         public CinemachineTankFollowCamera followCamera;
         public CinemachineCamera sightCamera;
+        public Vector2 cameraFreeLookClamp = new Vector2(-90f, 90f);
         public float[] sightZoomLevels = { 1f, 2f };
         public float sightZoomTime = 0.3f;
 
@@ -160,14 +161,6 @@ namespace TinyTanks.Tanks
 
         private void OnDisable() { all.Remove(this); }
 
-        public void SetActive(bool isActive) => SetActiveRpc(isActive);
-
-        [Rpc(SendTo.Everyone)]
-        private void SetActiveRpc(bool isActive)
-        {
-            gameObject.SetActive(isActive);
-        }
-        
         public void SetActiveViewer(bool isActiveViewer)
         {
             if (isActiveViewer)

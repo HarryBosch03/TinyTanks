@@ -44,6 +44,7 @@ namespace TinyTanks.Health
         {
             health.DamagedEvent += OnDamaged;
             tank.ActiveViewerChangedEvent += OnActiveViewerChanged;
+            OnActiveViewerChanged(tank.isActiveViewer);
         }
 
         private void OnDisable()

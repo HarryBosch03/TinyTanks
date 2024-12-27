@@ -60,6 +60,10 @@ PrefabInstance:
       propertyPath: hitFx
       value: 
       objectReference: {fileID: 2143919407854461768, guid: d4dcf7251d5d6cf46bb7c336bf25639e, type: 3}
+    - target: {fileID: 5331638167734849736, guid: 7d9f04090572f1b4992b290da71ec78d, type: 3}
+      propertyPath: useSmallEffect
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6174236122183350074, guid: 7d9f04090572f1b4992b290da71ec78d, type: 3}
       propertyPath: m_Name
       value: Bullet

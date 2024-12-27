@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TinyTanks.Level;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -36,7 +37,8 @@ namespace TinyTanks.Tanks
         [ServerRpc(RequireOwnership = false)]
         private void TakeOverServerRpc(ServerRpcParams rpcParams = default)
         {
-            if (enabled && IsOwner) return;
+            if (GameModeBase.instance == null) return;
+            GameModeBase.instance.SetControllingTank(this, rpcParams.Receive.SenderClientId, -1);
 
             var clientId = rpcParams.Receive.SenderClientId;
             var existingPlayer = all.Find(e => e.NetworkObject.OwnerClientId == clientId);
@@ -138,7 +140,7 @@ namespace TinyTanks.Tanks
                 cameraRotation += cursorDelta * sensitivityScaling;
 
                 cameraRotation.x %= 360f;
-                cameraRotation.y = Mathf.Clamp(cameraRotation.y, -90f, 90f);
+                cameraRotation.y = Mathf.Clamp(cameraRotation.y, tank.cameraFreeLookClamp.x, tank.cameraFreeLookClamp.y);
 
                 var ray = new Ray(mainCamera.transform.position, Quaternion.Euler(-cameraRotation.y, cameraRotation.x, 0f) * Vector3.forward);
                 tank.worldAimPosition = ray.GetPoint(1024f);

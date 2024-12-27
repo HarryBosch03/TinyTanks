@@ -11,11 +11,13 @@ namespace TinyTanks.Tanks
     public class CinemachineTankFollowCamera : CinemachineComponentBase
     {
         public TankController target;
-        public Vector3 offset;
+        public float cameraDistance;
+        public float orbitHeight;
+        public Vector2 verticalClamp;
         public float fovLerpTime = 1f;
 
         [HideInInspector]
-        public Vector2 freeLookRotation;
+        public Vector2 freeLookRotation = new Vector2(-90f, 90f);
 
         [HideInInspector]
         public float enabledTime;
@@ -27,8 +29,10 @@ namespace TinyTanks.Tanks
         public override void MutateCameraState(ref CameraState curState, float deltaTime)
         {
             var orientation = Quaternion.Euler(-freeLookRotation.y, freeLookRotation.x, 0f);
+            freeLookRotation.y = Mathf.Clamp(freeLookRotation.y, verticalClamp.x, verticalClamp.y);
+            var clampedOrientation = Quaternion.Euler(-freeLookRotation.y, freeLookRotation.x, 0f);
 
-            curState.RawPosition = target.transform.position + orientation * offset;
+            curState.RawPosition = target.transform.position + target.transform.up * orbitHeight + clampedOrientation * Vector3.back * cameraDistance;
             curState.RawOrientation = orientation;
 
             var t = enabledTime / fovLerpTime;

@@ -16,7 +16,7 @@ namespace TinyTanks.Health
         private TankController tank;
 
         public event Action<DamageInstance, DamageSource, ICanBeDamaged.DamageReport> DamagedEvent;
-        
+
         public void DamageDirect(DamageInstance damage, DamageSource source, ICanBeDamaged.DamageReport report)
         {
             currentHealth -= report.finalDamage;
@@ -28,10 +28,10 @@ namespace TinyTanks.Health
 
             NotifyDamamgedClientRpc(damage, source, report, currentHealth);
         }
-        
+
         public void Damage(DamageInstance damage, DamageSource source, out ICanBeDamaged.DamageReport report)
         {
-            ICanBeDamaged.CalculateDamage(this, damage, source, out report, baseDefense, baseArmorClass);
+            ICanBeDamaged.CalculateDamage(this, damage, source, out report, baseDefense, baseArmorClass, true);
             DamageDirect(damage, source, report);
         }
 
@@ -49,6 +49,18 @@ namespace TinyTanks.Health
         {
             tank = GetComponent<TankController>();
             currentHealth = maxHealth;
+        }
+
+        private void OnEnable() { tank.SetIsDestroyedEvent += OnSetIsDestroyed; }
+
+        private void OnDisable() { tank.SetIsDestroyedEvent -= OnSetIsDestroyed; }
+
+        private void OnSetIsDestroyed(bool isDestroyed)
+        {
+            if (IsServer && !isDestroyed)
+            {
+                currentHealth = maxHealth;
+            }
         }
     }
 }

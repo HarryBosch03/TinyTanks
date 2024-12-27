@@ -17,7 +17,7 @@ namespace TinyTanks.Health
 
         public void Damage(DamageInstance damage, DamageSource source, out ICanBeDamaged.DamageReport report)
         {
-            ICanBeDamaged.CalculateDamage(health, damage, source, out report, defense, armorClass);
+            ICanBeDamaged.CalculateDamage(health, damage, source, out report, defense, armorClass, true);
             health.DamageDirect(damage, source, report);
         }
     }

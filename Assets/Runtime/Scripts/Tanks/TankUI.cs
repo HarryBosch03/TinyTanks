@@ -33,8 +33,17 @@ namespace TinyTanks.Tanks
 
         private void Update()
         {
-            var turretAngle = Vector3.SignedAngle(tank.transform.forward, tank.model.turretMount.forward, tank.transform.up);
-            var cameraAngle = Vector3.SignedAngle(tank.transform.forward, mainCamera.transform.forward, tank.transform.up);
+            var tankForward = tank.transform.forward;
+            var turretForward = tank.model.turretMount.forward;
+            var cameraForward = mainCamera.transform.forward;
+            var normal = tank.transform.up;
+
+            tankForward = Vector3.ProjectOnPlane(tankForward, normal).normalized;
+            turretForward = Vector3.ProjectOnPlane(turretForward, normal).normalized;
+            cameraForward = Vector3.ProjectOnPlane(cameraForward, normal).normalized;
+            
+            var turretAngle = Vector3.SignedAngle(tankForward, turretForward, tank.transform.up);
+            var cameraAngle = Vector3.SignedAngle(tankForward, cameraForward, tank.transform.up);
 
             alignmentBody.rotation = Quaternion.Euler(0f, 0f, cameraAngle);
             alignmentTurret.rotation = Quaternion.Euler(0f, 0f, cameraAngle - turretAngle);

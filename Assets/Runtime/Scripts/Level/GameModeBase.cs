@@ -1,10 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using TinyTanks.Tanks;
 using Unity.Cinemachine;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Random = UnityEngine.Random;
 
 namespace TinyTanks.Level
 {
@@ -14,8 +16,10 @@ namespace TinyTanks.Level
         public CinemachineCamera spectatorCamera;
         public Canvas respawnCanvas;
 
-        public List<TankInput> players { get; } = new List<TankInput>();
-        public TankInput localPlayer => players.FirstOrDefault(e => e.enabled);
+        public List<PlayerData> players { get; } = new List<PlayerData>();
+        public TankInput localPlayer { get; private set; }
+        
+        public static GameModeBase instance { get; private set; }
 
         public void RespawnPlayer() => RespawnPlayer(-1);
         public void RespawnPlayer(int controllerIndex) => RespawnPlayerServerRpc(controllerIndex);
@@ -23,10 +27,20 @@ namespace TinyTanks.Level
         private void Awake()
         {
             respawnCanvas.gameObject.SetActive(false);
-            players.AddRange(FindObjectsByType<TankInput>(FindObjectsSortMode.None));
+            var players = FindObjectsByType<TankInput>(FindObjectsSortMode.None);
+            foreach (var player in players) this.players.Add(new PlayerData(player, this.players.Count));
         }
 
-        private void OnEnable() { ShowRespawnScreen(true); }
+        private void OnEnable()
+        {
+            ShowRespawnScreen(true);
+            instance = this;
+        }
+
+        private void OnDisable()
+        {
+            if (instance == this) instance = null;
+        }
 
         private void ShowRespawnScreen(bool show) { respawnCanvas.gameObject.SetActive(show); }
 
@@ -63,14 +77,14 @@ namespace TinyTanks.Level
 
         private void CheckPlayersAgainstBoundary()
         {
-            var boundary = LevelBoundary.instance;
+            var boundary = LevelMeta.instance;
             if (boundary == null) return;
 
             foreach (var player in players)
             {
-                if (player.transform.position.y < boundary.killPlane)
+                if (player.tankInput.transform.position.y < boundary.killPlane)
                 {
-                    player.tank.SetIsDestroyed(true);
+                    player.tankInput.tank.SetIsDestroyed(true);
                 }
             }
         }
@@ -89,18 +103,57 @@ namespace TinyTanks.Level
             var tank = GetTankControllerForConnection(rpcParams.Receive.SenderClientId);
             if (tank == null)
             {
-                var instance = Instantiate(tankPrefab);
-                instance.NetworkObject.SpawnWithOwnership(rpcParams.Receive.SenderClientId, true);
+                tank = new PlayerData(Instantiate(tankPrefab), players.Count);
+                tank.tankInput.NetworkObject.SpawnWithOwnership(rpcParams.Receive.SenderClientId, true);
 
-                players.Add(instance);
-                SetLocalPlayerClientRpc(instance.NetworkObject, controllerIndex, replyParams);
+                players.Add(tank);
+                SetControllingTank(tank.tankInput, rpcParams.Receive.SenderClientId, controllerIndex);
             }
             else
             {
-                tank.tank.SetActive(true);
+                tank.tankInput.tank.SetIsDestroyed(false);
             }
 
+            var spawnPoint = FindBestSpawnPoint(tank);
+            tank.tankInput.tank.body.position = spawnPoint.position;
+            tank.tankInput.tank.body.rotation = spawnPoint.rotation;
+            tank.tankInput.tank.body.linearVelocity = Vector3.zero;
+            tank.tankInput.tank.body.angularVelocity = Vector3.zero;
+            
             NotifyRespawnClientRpc(replyParams);
+        }
+
+        private Transform FindBestSpawnPoint(PlayerData tank)
+        {
+            var levelMeta = FindFirstObjectByType<LevelMeta>();
+            if (levelMeta == null) return transform;
+
+            var bestSpawnPoint = (Transform)null;
+            var bestScore = 0f;
+            for (var i = 0; i < levelMeta.spawnPoints.Length; i++)
+            {
+                var spawnPoint = levelMeta.spawnPoints[i];
+                var score = float.MaxValue;
+                for (var j = 0; j < players.Count; j++)
+                {
+                    var player = players[j];
+                    if (player.team == tank.team || player.tankInput.tank.isDestroyed) continue;
+                    score = Mathf.Min(score, (player.tankInput.transform.position - spawnPoint.position).sqrMagnitude);
+                }
+
+                if (score > bestScore)
+                {
+                    bestSpawnPoint = spawnPoint;
+                    bestScore = score;
+                }
+            }
+
+            if (bestSpawnPoint == null)
+            {
+                bestSpawnPoint = levelMeta.spawnPoints[Random.Range(0, levelMeta.spawnPoints.Length)];
+            }
+            
+            return bestSpawnPoint;
         }
 
         [ClientRpc]
@@ -111,19 +164,46 @@ namespace TinyTanks.Level
         }
 
         [ClientRpc]
-        private void SetLocalPlayerClientRpc(NetworkObjectReference reference, int controllerIndex, ClientRpcParams target = default)
+        private void SetLocalPlayerClientRpc(NetworkBehaviourReference tankInputRef, int controllerIndex, ClientRpcParams target = default)
         {
-            localPlayer.controllerIndex = controllerIndex;
+            tankInputRef.TryGet<TankInput>(out var tankInput);
+            localPlayer = tankInput;
+            tankInput.controllerIndex = controllerIndex;
+            tankInput.tank.SetActiveViewer(true);
         }
 
-        private TankInput GetTankControllerForConnection(ulong clientId)
+        private PlayerData GetTankControllerForConnection(ulong clientId)
         {
             foreach (var player in players)
             {
-                if (clientId == player.OwnerClientId) return player;
+                if (clientId == player.tankInput.OwnerClientId) return player;
             }
 
             return null;
+        }
+
+        public void SetControllingTank(TankInput tankInput, ulong clientId, int controllerIndex)
+        {
+            if (tankInput.NetworkObject.OwnerClientId != clientId) tankInput.NetworkObject.ChangeOwnership(clientId);
+            SetLocalPlayerClientRpc(tankInput, controllerIndex, new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams
+                {
+                    TargetClientIds = new[] { clientId }
+                }
+            });
+        }
+
+        public class PlayerData
+        {
+            public TankInput tankInput;
+            public int team;
+
+            public PlayerData(TankInput tankInput, int team)
+            {
+                this.tankInput = tankInput;
+                this.team = team;
+            }
         }
     }
 }

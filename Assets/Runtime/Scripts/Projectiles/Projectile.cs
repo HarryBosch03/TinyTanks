@@ -12,8 +12,7 @@ namespace TinyTanks.Projectiles
         public DamageInstance damage;
         public float startSpeed;
         public float maxAge;
-        public GameObject hitFx;
-        public GameObject ricochetFx;
+        public bool useSmallEffect;
 
         private float age;
 
@@ -37,8 +36,8 @@ namespace TinyTanks.Projectiles
         private void FixedUpdate()
         {
             var ray = new Ray(position, velocity);
-            var ricochet = false;
             var playHitFx = true;
+            var ricochet = false;
             
             if (Physics.Raycast(ray, out var hit, velocity.magnitude * Time.fixedDeltaTime * 1.01f))
             {
@@ -46,11 +45,10 @@ namespace TinyTanks.Projectiles
                 if (canBeDamaged != null)
                 {
                     var angle = Vector3.Angle(ray.direction, -hit.normal);
-                    canBeDamaged.Damage(damage, new DamageSource(shooter, ray, hit, angle), out var report);
+                    canBeDamaged.Damage(damage, new DamageSource(shooter, ray, hit, angle, useSmallEffect), out var report);
+                    ricochet = report.didRicochet;
                     if (report.finalDamage <= 1)
                     {
-                        ricochet = true;
-                        if (ricochetFx != null) Instantiate(ricochetFx, hit.point, Quaternion.LookRotation(hit.normal));
                         position = hit.point;
                         velocity = Vector3.Reflect(velocity, hit.normal) * 0.5f;
 
@@ -65,7 +63,6 @@ namespace TinyTanks.Projectiles
 
                 if (!ricochet)
                 {
-                    if (playHitFx && hitFx != null) Instantiate(hitFx, hit.point, Quaternion.LookRotation(hit.normal));
                     Destroy(gameObject);
                 }
             }

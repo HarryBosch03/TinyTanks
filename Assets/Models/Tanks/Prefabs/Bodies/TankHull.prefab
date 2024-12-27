@@ -287,8 +287,8 @@ ParticleSystem:
     startSize:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 0.4
-      minScalar: 0.2
+      scalar: 1.6
+      minScalar: 0.8
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -672,7 +672,7 @@ ParticleSystem:
     donutRadius: 0.2
     m_Position: {x: 0, y: 0, z: 0}
     m_Rotation: {x: 0, y: 0, z: 0}
-    m_Scale: {x: 0.3, y: 0, z: 0.2}
+    m_Scale: {x: 1.2, y: 0, z: 0.8}
     placementMode: 0
     m_MeshMaterialIndex: 0
     m_MeshNormalOffset: 0
@@ -4843,15 +4843,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 54e3c1640f4716a4b8cfe48acef03383, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.25
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 54e3c1640f4716a4b8cfe48acef03383, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.25
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 54e3c1640f4716a4b8cfe48acef03383, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.25
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 54e3c1640f4716a4b8cfe48acef03383, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5108,7 +5108,7 @@ ParticleSystemRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -876546973899608171, guid: 54e3c1640f4716a4b8cfe48acef03383, type: 3}
+  - {fileID: 2100000, guid: 83a86322012f6174093ac5b67c7e29f9, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -5415,7 +5415,7 @@ ParticleSystem:
     startSize:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0.25
+      scalar: 1
       minScalar: 1
       maxCurve:
         serializedVersion: 2
@@ -9898,39 +9898,39 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   wheels:
   - transform: {fileID: 3037841641227660934}
-    radius: 0.053
+    radius: 0.212
     doesContactGround: 0
     restPosition: {x: 1.1702064, y: 0.7472507, z: 3.0595605}
   - transform: {fileID: 8103283012894158088}
-    radius: 0.1
+    radius: 0.4
     doesContactGround: 1
     restPosition: {x: 1.1702064, y: 0.40720025, z: 2.184151}
   - transform: {fileID: 5298570933340167057}
-    radius: 0.1
+    radius: 0.4
     doesContactGround: 1
     restPosition: {x: 1.1702064, y: 0.40720025, z: 1.2636749}
   - transform: {fileID: 3273264432709114762}
-    radius: 0.1
+    radius: 0.4
     doesContactGround: 1
     restPosition: {x: 1.1702064, y: 0.40720025, z: 0.34319854}
   - transform: {fileID: 2292476304340274460}
-    radius: 0.1
+    radius: 0.4
     doesContactGround: 1
     restPosition: {x: 1.1702064, y: 0.40720025, z: -0.5772778}
   - transform: {fileID: 3302698648175791982}
-    radius: 0.1
+    radius: 0.4
     doesContactGround: 1
     restPosition: {x: 1.1702064, y: 0.40720025, z: -1.4937669}
   - transform: {fileID: 5036242202975910358}
-    radius: 0.06244265
+    radius: 0.2497706
     doesContactGround: 0
     restPosition: {x: 1.1702064, y: 0.71281886, z: -2.505097}
   particleCount: 80
   particleRotationOffset: {x: 180, y: 0, z: 0}
   driveWheelRotationOffset: {x: 0, y: 0, z: 90}
   driveWheelRotationAxis: {x: 1, y: 0, z: 0}
-  trackOffset: 0.006
-  topSlack: 0.03
+  trackOffset: 0.024
+  topSlack: 0.12
   slackJiggleAmplitude: 0.6
   slackJiggleFrequency: 2.5
 --- !u!1 &8035352333900044320 stripped
@@ -9952,39 +9952,39 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   wheels:
   - transform: {fileID: 2001014762922719764}
-    radius: 0.053
+    radius: 0.212
     doesContactGround: 0
     restPosition: {x: -1.17021, y: 0.7472507, z: 3.0595605}
   - transform: {fileID: 6721158698950674354}
-    radius: 0.1
+    radius: 0.4
     doesContactGround: 1
     restPosition: {x: -1.17021, y: 0.40720025, z: 2.184151}
   - transform: {fileID: 7648311589059871153}
-    radius: 0.1
+    radius: 0.4
     doesContactGround: 1
     restPosition: {x: -1.17021, y: 0.40720025, z: 1.2636749}
   - transform: {fileID: 7425103995133038048}
-    radius: 0.1
+    radius: 0.4
     doesContactGround: 1
     restPosition: {x: -1.17021, y: 0.40720025, z: 0.34319854}
   - transform: {fileID: 5774280707517246857}
-    radius: 0.1
+    radius: 0.4
     doesContactGround: 1
     restPosition: {x: -1.17021, y: 0.40720025, z: -0.5772778}
   - transform: {fileID: 8427550773603333639}
-    radius: 0.1
+    radius: 0.4
     doesContactGround: 1
     restPosition: {x: -1.17021, y: 0.40720025, z: -1.493767}
   - transform: {fileID: 8531878881174406472}
-    radius: 0.06244265
+    radius: 0.2497706
     doesContactGround: 0
     restPosition: {x: -1.17021, y: 0.71281886, z: -2.505097}
   particleCount: 80
   particleRotationOffset: {x: 180, y: 0, z: 0}
   driveWheelRotationOffset: {x: 0, y: 0, z: 90}
   driveWheelRotationAxis: {x: 1, y: 0, z: 0}
-  trackOffset: 0.006
-  topSlack: 0.03
+  trackOffset: 0.024
+  topSlack: 0.12
   slackJiggleAmplitude: 0.6
   slackJiggleFrequency: 2.5
 --- !u!199 &5299796354852245679
@@ -10011,7 +10011,7 @@ ParticleSystemRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -876546973899608171, guid: 54e3c1640f4716a4b8cfe48acef03383, type: 3}
+  - {fileID: 2100000, guid: 83a86322012f6174093ac5b67c7e29f9, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -10318,7 +10318,7 @@ ParticleSystem:
     startSize:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0.25
+      scalar: 1
       minScalar: 1
       maxCurve:
         serializedVersion: 2

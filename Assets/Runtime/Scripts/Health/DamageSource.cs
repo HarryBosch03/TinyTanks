@@ -12,8 +12,9 @@ namespace TinyTanks.Health
         public Vector3 hitPoint;
         public Vector3 hitNormal;
         public float impactAngle;
+        public bool useSmallEffect;
 
-        public DamageSource(NetworkObject invoker, Ray ray, RaycastHit hit, float impactAngle)
+        public DamageSource(NetworkObject invoker, Ray ray, RaycastHit hit, float impactAngle, bool useSmallEffect)
         {
             this.invoker = invoker;
             
@@ -24,6 +25,7 @@ namespace TinyTanks.Health
             hitNormal = hit.normal;
             
             this.impactAngle = impactAngle;
+            this.useSmallEffect = useSmallEffect;
         }
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -34,6 +36,7 @@ namespace TinyTanks.Health
             serializer.SerializeValue(ref hitPoint);
             serializer.SerializeValue(ref hitNormal);
             serializer.SerializeValue(ref impactAngle);
+            serializer.SerializeValue(ref useSmallEffect);
         }
     }
 }
