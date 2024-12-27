@@ -12,7 +12,7 @@ namespace TinyTanks.Tanks
         public int particleCount = 100;
         public Vector3 particleRotationOffset;
         public Vector3 driveWheelRotationOffset;
-        public Vector3 driveWheelRotationAxis = Vector3.right;
+        public Vector3 wheelRotationAxis = Vector3.right;
         public float trackOffset = 0.006f;
 
         [Space]
@@ -73,8 +73,11 @@ namespace TinyTanks.Tanks
             var segmentSize = pathTotalLength / particleCount;
             var index = 0;
 
-            var driveWheel = wheels[^1];
-            driveWheel.transform.localRotation = Quaternion.AngleAxis(distanceTraveled / (Mathf.PI * 2f * driveWheel.radius) * 360f, driveWheelRotationAxis.normalized) * Quaternion.Euler(driveWheelRotationOffset);
+            for (var i = 0; i < wheels.Length; i++)
+            {
+                var wheel = wheels[i];
+                wheel.transform.localRotation = Quaternion.AngleAxis(distanceTraveled / (Mathf.PI * 2f * wheel.radius) * 360f, wheelRotationAxis.normalized) * Quaternion.Euler(driveWheelRotationOffset);
+            }
             
             if (path.Length == 0) return;
             

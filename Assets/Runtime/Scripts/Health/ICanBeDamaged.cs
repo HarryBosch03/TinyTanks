@@ -11,7 +11,7 @@ namespace TinyTanks.Health
         protected static void NotifyDamaged(GameObject victim, DamageInstance damage, DamageSource source, DamageReport report) => DamagedEvent?.Invoke(victim, damage, source, report);
         public static event System.Action<GameObject, DamageInstance, DamageSource, DamageReport> DamagedEvent;
 
-        public static void CalculateDamage(NetworkBehaviour netBehaviour, DamageInstance damage, DamageSource source, out DamageReport report, int defense, int armorClass, bool canRicochet)
+        public static void CalculateDamage(NetworkBehaviour netBehaviour, Rigidbody body, DamageInstance damage, DamageSource source, out DamageReport report, int defense, int armorClass, bool canRicochet)
         {
             if (!netBehaviour.IsServer)
             {
@@ -21,6 +21,8 @@ namespace TinyTanks.Health
 
             report.finalDamage = damage.damageAmount;
 
+            if (body != null) body.AddForceAtPosition(-source.hitNormal * damage.force, source.hitPoint, ForceMode.Impulse);
+            
             report.didPenetrate = damage.damageClass >= armorClass;
             if (!report.didPenetrate)
             {

@@ -13,7 +13,7 @@ namespace TinyTanks.Health
         public int baseDefense;
         public int baseArmorClass;
 
-        private TankController tank;
+        public TankController tank { get; private set; }
 
         public event Action<DamageInstance, DamageSource, ICanBeDamaged.DamageReport> DamagedEvent;
 
@@ -31,7 +31,7 @@ namespace TinyTanks.Health
 
         public void Damage(DamageInstance damage, DamageSource source, out ICanBeDamaged.DamageReport report)
         {
-            ICanBeDamaged.CalculateDamage(this, damage, source, out report, baseDefense, baseArmorClass, true);
+            ICanBeDamaged.CalculateDamage(this, tank.body, damage, source, out report, baseDefense, baseArmorClass, true);
             DamageDirect(damage, source, report);
         }
 

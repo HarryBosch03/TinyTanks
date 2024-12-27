@@ -13,7 +13,8 @@ namespace TinyTanks.Tanks
     [RequireComponent(typeof(TankController))]
     public class TankInput : NetworkBehaviour
     {
-        public int controllerIndex;
+        private int controllerIndex = -1;
+
         public float mouseCameraSensitivity;
         public float mouseTraverseSensitivity = 0.01f;
         public float gamepadSensitivity;
@@ -24,33 +25,33 @@ namespace TinyTanks.Tanks
         private Camera mainCamera;
         private CinemachineTankFollowCamera followCamera;
 
+        public ulong? controllingId { get; private set; } = null;
+
         public TankController tank { get; private set; }
 
-        public static TankInput localPlayer => all.FirstOrDefault(e => e.IsOwner);
+        public static TankInput localPlayer { get; private set; }
         public static List<TankInput> all { get; } = new List<TankInput>();
 
-        public void TakeOver()
-        {
-            TakeOverServerRpc();
-        }
-
         [ServerRpc(RequireOwnership = false)]
-        private void TakeOverServerRpc(ServerRpcParams rpcParams = default)
+        public void TakeOverServerRpc(ulong? controllingId)
         {
-            if (GameModeBase.instance == null) return;
-            GameModeBase.instance.SetControllingTank(this, rpcParams.Receive.SenderClientId, -1);
-
-            var clientId = rpcParams.Receive.SenderClientId;
-            var existingPlayer = all.Find(e => e.NetworkObject.OwnerClientId == clientId);
+            var existingPlayer = all.FirstOrDefault(e => e.controllingId.HasValue && e.controllingId == controllingId);
             if (existingPlayer != null)
             {
-                existingPlayer.NetworkObject.RemoveOwnership();
-                existingPlayer.SetEnabledClientRpc(false);
+                existingPlayer.SetControllingIdRpc(null);
             }
+            SetControllingIdRpc(controllingId);
+        }
 
-            NetworkObject.ChangeOwnership(clientId);
-            SetEnabledClientRpc(true);
-            tank.SetActiveViewer(true);
+        [Rpc(SendTo.Everyone)]
+        private void SetControllingIdRpc(ulong? controllingId)
+        {
+            this.controllingId = controllingId;
+            if (IsServer) NetworkObject.ChangeOwnership(controllingId ?? 0);
+
+            var isLocalPlayer = controllingId.HasValue && NetworkManager.LocalClientId == controllingId.Value;
+            if (isLocalPlayer) localPlayer = this;
+            tank.SetActiveViewer(isLocalPlayer);
         }
 
         private void Awake()
@@ -64,19 +65,18 @@ namespace TinyTanks.Tanks
         {
             all.Add(this);
             if (IsServer) SetEnabledClientRpc(true);
+            followCamera.transform.SetParent(null);
         }
 
         private void OnDisable()
         {
             all.Remove(this);
             if (IsServer) SetEnabledClientRpc(false);
+            followCamera.transform.SetParent(transform);
         }
 
         [ClientRpc]
-        private void SetEnabledClientRpc(bool enabled)
-        {
-            this.enabled = enabled;
-        }
+        private void SetEnabledClientRpc(bool enabled) { this.enabled = enabled; }
 
         public override void OnNetworkSpawn()
         {
@@ -96,7 +96,7 @@ namespace TinyTanks.Tanks
 
         private void Update()
         {
-            if (Application.isFocused && IsOwner)
+            if (Application.isFocused && controllingId.HasValue && controllingId.Value == NetworkManager.LocalClientId)
             {
                 var cursorDelta = Vector2.zero;
                 var gp = Gamepad.all.ElementAtOrDefault(controllerIndex);
@@ -153,13 +153,15 @@ namespace TinyTanks.Tanks
                 }
 
                 followCamera.freeLookRotation = cameraRotation;
-                cursorPosition = mainCamera.WorldToScreenPoint(tank.worldAimPosition);
-
                 tank.cameraRotation = cameraRotation;
             }
+        }
 
-            cursor.gameObject.SetActive(true);
-            cursor.position = cursorPosition;
+        private void LateUpdate()
+        {
+            cursorPosition = mainCamera.WorldToScreenPoint(tank.worldAimPosition);
+            cursor.gameObject.SetActive(IsOwner);
+            cursor.anchoredPosition = cursorPosition;
         }
     }
 }

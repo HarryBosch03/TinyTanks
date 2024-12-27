@@ -30,7 +30,7 @@ namespace Runtime.Editor
             {
                 if (GUILayout.Button("Request Ownership"))
                 {
-                    target.TakeOver();
+                    target.TakeOverServerRpc(target.NetworkObject.NetworkManager.LocalClientId);
                 }
             }
         }

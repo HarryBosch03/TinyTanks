@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using TinyTanks.Tanks;
 using Unity.Cinemachine;
 using Unity.Netcode;
@@ -17,12 +15,11 @@ namespace TinyTanks.Level
         public Canvas respawnCanvas;
 
         public List<PlayerData> players { get; } = new List<PlayerData>();
-        public TankInput localPlayer { get; private set; }
-        
+
         public static GameModeBase instance { get; private set; }
 
         public void RespawnPlayer() => RespawnPlayer(-1);
-        public void RespawnPlayer(int controllerIndex) => RespawnPlayerServerRpc(controllerIndex);
+        public void RespawnPlayer(int controllerIndex) => RespawnPlayerServerRpc();
 
         private void Awake()
         {
@@ -90,16 +87,8 @@ namespace TinyTanks.Level
         }
 
         [ServerRpc(RequireOwnership = false)]
-        private void RespawnPlayerServerRpc(int controllerIndex, ServerRpcParams rpcParams = default)
+        private void RespawnPlayerServerRpc(ServerRpcParams rpcParams = default)
         {
-            var replyParams = new ClientRpcParams()
-            {
-                Send = new ClientRpcSendParams
-                {
-                    TargetClientIds = new[] { rpcParams.Receive.SenderClientId }
-                }
-            };
-
             var tank = GetTankControllerForConnection(rpcParams.Receive.SenderClientId);
             if (tank == null)
             {
@@ -107,20 +96,30 @@ namespace TinyTanks.Level
                 tank.tankInput.NetworkObject.SpawnWithOwnership(rpcParams.Receive.SenderClientId, true);
 
                 players.Add(tank);
-                SetControllingTank(tank.tankInput, rpcParams.Receive.SenderClientId, controllerIndex);
+                tank.tankInput.TakeOverServerRpc(rpcParams.Receive.SenderClientId);
             }
-            else
-            {
-                tank.tankInput.tank.SetIsDestroyed(false);
-            }
+
+            tank.tankInput.tank.SetIsDestroyed(false);
 
             var spawnPoint = FindBestSpawnPoint(tank);
             tank.tankInput.tank.body.position = spawnPoint.position;
             tank.tankInput.tank.body.rotation = spawnPoint.rotation;
             tank.tankInput.tank.body.linearVelocity = Vector3.zero;
             tank.tankInput.tank.body.angularVelocity = Vector3.zero;
-            
-            NotifyRespawnClientRpc(replyParams);
+
+            NotifyRespawnClientRpc(new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams
+                {
+                    TargetClientIds = new[] { rpcParams.Receive.SenderClientId },
+                }
+            });
+        }
+
+        [ClientRpc]
+        private void NotifyRespawnClientRpc(ClientRpcParams clientRpcParams)
+        {
+            respawnCanvas.gameObject.SetActive(false);
         }
 
         private Transform FindBestSpawnPoint(PlayerData tank)
@@ -152,46 +151,18 @@ namespace TinyTanks.Level
             {
                 bestSpawnPoint = levelMeta.spawnPoints[Random.Range(0, levelMeta.spawnPoints.Length)];
             }
-            
+
             return bestSpawnPoint;
-        }
-
-        [ClientRpc]
-        private void NotifyRespawnClientRpc(ClientRpcParams sendParams = default)
-        {
-            respawnCanvas.gameObject.SetActive(false);
-            localPlayer.tank.SetActiveViewer(true);
-        }
-
-        [ClientRpc]
-        private void SetLocalPlayerClientRpc(NetworkBehaviourReference tankInputRef, int controllerIndex, ClientRpcParams target = default)
-        {
-            tankInputRef.TryGet<TankInput>(out var tankInput);
-            localPlayer = tankInput;
-            tankInput.controllerIndex = controllerIndex;
-            tankInput.tank.SetActiveViewer(true);
         }
 
         private PlayerData GetTankControllerForConnection(ulong clientId)
         {
             foreach (var player in players)
             {
-                if (clientId == player.tankInput.OwnerClientId) return player;
+                if (clientId == player.tankInput.controllingId) return player;
             }
 
             return null;
-        }
-
-        public void SetControllingTank(TankInput tankInput, ulong clientId, int controllerIndex)
-        {
-            if (tankInput.NetworkObject.OwnerClientId != clientId) tankInput.NetworkObject.ChangeOwnership(clientId);
-            SetLocalPlayerClientRpc(tankInput, controllerIndex, new ClientRpcParams
-            {
-                Send = new ClientRpcSendParams
-                {
-                    TargetClientIds = new[] { clientId }
-                }
-            });
         }
 
         public class PlayerData
