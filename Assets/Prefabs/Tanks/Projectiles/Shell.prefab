@@ -185,12 +185,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   damage:
-    damage: 0
+    damageClass: 0
+    damageAmount: 0
+    critAngle: 0
+    force: 0
   startSpeed: 600
   maxAge: 10
-  maxAngleBeforeRicochet: 60
-  hitFx: {fileID: 7570401788310330460, guid: 42b13a615011aa54c9e4adbeda6880e9, type: 3}
-  ricochetFx: {fileID: 7570401788310330460, guid: 3677e41fc15fa9340b1feb1bb34635a3, type: 3}
+  useSmallEffect: 0
   position: {x: 0, y: 0, z: 0}
   velocity: {x: 0, y: 0, z: 0}
   shooter: {fileID: 0}

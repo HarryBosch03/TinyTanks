@@ -43,11 +43,17 @@ namespace TinyTanks.Level
         private void PlayRpc(DamageSource source, ICanBeDamaged.DamageReport report)
         {
             ParticleSystem effect;
-            if (smallRicochetEffect != null && report.didRicochet && source.useSmallEffect) effect = smallRicochetEffect;
-            else if (smallHitEffect != null && source.useSmallEffect) effect = smallHitEffect;
-            else if (ricochetEffect != null && report.didRicochet) effect = ricochetEffect;
-            else if (hitEffect != null) effect = hitEffect;
-            else return;
+
+            if (source.useSmallEffect)
+            {
+                effect = report.didRicochet ? smallRicochetEffect : smallHitEffect;
+            }
+            else
+            {
+                effect = report.didRicochet ? ricochetEffect : hitEffect;
+            }
+
+            if (effect == null) return;
             
             effect.transform.position = source.hitPoint;
             effect.transform.rotation = Quaternion.LookRotation(source.hitNormal, source.direction);

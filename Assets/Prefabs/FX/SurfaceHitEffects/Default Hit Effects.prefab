@@ -72,6 +72,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   hitEffect: {fileID: 7626650815282443544, guid: 42b13a615011aa54c9e4adbeda6880e9, type: 3}
-  ricochetEffect: {fileID: 0}
+  ricochetEffect: {fileID: 7626650815282443544, guid: 42b13a615011aa54c9e4adbeda6880e9, type: 3}
   smallHitEffect: {fileID: 2096581226861775372, guid: d4dcf7251d5d6cf46bb7c336bf25639e, type: 3}
-  smallRicochetEffect: {fileID: 0}
+  smallRicochetEffect: {fileID: 2096581226861775372, guid: d4dcf7251d5d6cf46bb7c336bf25639e, type: 3}

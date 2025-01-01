@@ -64,11 +64,9 @@ namespace TinyTanks.Tanks
         public ParticleSystem explosionFx;
 
         private bool onGround;
-        private Vector2 turretVelocity;
         private int sightZoomLevelIndex;
         private float sightDefaultFov;
-        private float counterRollAccumilator;
-        private bool isOutOfBounds;
+        private float counterRollAccumulator;
 
         public event Action<bool> SetIsDestroyedEvent;
         public event Action<bool> ActiveViewerChangedEvent;
@@ -84,8 +82,11 @@ namespace TinyTanks.Tanks
         public float throttle { get; set; }
         public float steering { get; set; }
         public Vector2 turretRotation { get; private set; }
+        public Vector2 turretVelocity { get; set; }
         public Vector2 turretTarget { get; private set; }
-        public Vector3 worldAimPosition { get; set; }
+        public Vector3 worldAimDirection { get; set; }
+        public float range { get; set; }
+        public Vector2 traverseInput { get; set; }
         public bool isActiveViewer => activeViewer == this;
         public static TankController activeViewer { get; private set; }
         
@@ -143,7 +144,7 @@ namespace TinyTanks.Tanks
             SetActiveViewer(false);
 
             sightDefaultFov = sightCamera.Lens.FieldOfView;
-            worldAimPosition = model.gunMuzzle.position + model.gunMuzzle.forward;
+            worldAimDirection = transform.forward;
         }
 
         private void Start()
@@ -200,12 +201,12 @@ namespace TinyTanks.Tanks
         {
             if (!onGround && Mathf.Abs(body.linearVelocity.y) < 0.1f)
             {
-                counterRollAccumilator += counterRollForce * Time.deltaTime;
-                body.AddTorque(transform.forward * counterRollAccumilator, ForceMode.Acceleration);
+                counterRollAccumulator += counterRollForce * Time.deltaTime;
+                body.AddTorque(transform.forward * counterRollAccumulator, ForceMode.Acceleration);
             }
             else
             {
-                counterRollAccumilator = 0f;
+                counterRollAccumulator = 0f;
             }
         }
 
@@ -214,7 +215,8 @@ namespace TinyTanks.Tanks
         {
             throttle = input.throttle;
             steering = input.steering;
-            worldAimPosition = input.worldAimPosition;
+            worldAimDirection = input.worldAimDirection;
+            traverseInput = input.traverseInput;
         }
 
         [ClientRpc(Delivery = RpcDelivery.Unreliable)]
@@ -250,6 +252,14 @@ namespace TinyTanks.Tanks
             {
                 sightZoomLevelIndex = 0;
                 sightCamera.Lens.FieldOfView = sightDefaultFov;
+            }
+            else
+            {
+                var orientation = transform.rotation * Quaternion.Euler(-turretRotation.y, turretRotation.x, 0f);
+                var cameraRotation = new Vector2(orientation.eulerAngles.y, -orientation.eulerAngles.x);
+                if (cameraRotation.y < -180f) cameraRotation.y += 360f;
+
+                this.cameraRotation = cameraRotation;
             }
             UpdateCameraStates();
         }
@@ -289,25 +299,34 @@ namespace TinyTanks.Tanks
             var delta = Vector2.zero;
             if (!isDestroyed)
             {
-                var worldVector = (worldAimPosition - model.gunPivot.position).normalized;
-                var localVector = transform.InverseTransformDirection(worldVector);
-                var rotation = Quaternion.LookRotation(localVector, Vector3.up);
-                turretTarget = new Vector2(rotation.eulerAngles.y, -rotation.eulerAngles.x);
-                
-                delta = new Vector2()
+                if (useSight)
                 {
-                    x = Mathf.DeltaAngle(turretRotation.x, turretTarget.x),
-                    y = Mathf.DeltaAngle(turretRotation.y, turretTarget.y),
-                };
+                    delta = traverseInput;
+                }
+                else
+                {
+                    var localVector = transform.InverseTransformDirection(worldAimDirection);
+                    var rotation = Quaternion.LookRotation(localVector, Vector3.up);
+                    turretTarget = new Vector2(rotation.eulerAngles.y, -rotation.eulerAngles.x);
+                    
+                    delta = new Vector2()
+                    {
+                        x = Mathf.DeltaAngle(turretRotation.x, turretTarget.x),
+                        y = Mathf.DeltaAngle(turretRotation.y, turretTarget.y),
+                    };
+                }
             }
 
+            var turretVelocity = this.turretVelocity;
+            
             turretRotation += turretVelocity * Time.fixedDeltaTime;
             turretVelocity += (delta * traverseSpeedSpring - turretVelocity * traverseSpeedDamping) * Time.fixedDeltaTime;
             turretVelocity.x = Mathf.Clamp(turretVelocity.x, -maxTraverseSpeed, maxTraverseSpeed);
             turretVelocity.y = Mathf.Clamp(turretVelocity.y, -maxTraverseSpeed, maxTraverseSpeed);
 
-            turretRotation = ClampTurretRotation(turretRotation);
-
+            this.turretVelocity = turretVelocity;
+            
+            ClampTurretRotation();
             MoveCoax();
         }
 
@@ -315,19 +334,46 @@ namespace TinyTanks.Tanks
         {
             var coax = model.coaxBarrel;
             var ray = new Ray(model.gunMuzzle.position, model.gunMuzzle.forward);
-            var aimDistance = (worldAimPosition - ray.origin).magnitude;
-            coax.LookAt(ray.GetPoint(aimDistance), transform.up);
+            range = 1024f;
+            if (Physics.Raycast(ray, out var hit, 1024)) range = hit.distance;
+            coax.LookAt(ray.GetPoint(range), transform.up);
         }
 
-        private Vector2 ClampTurretRotation(Vector2 turretRotation)
+        private void ClampTurretRotation()
         {
+            var turretRotation = this.turretRotation;
+            var turretVelocity = this.turretVelocity;
+            
             turretRotation.x = ((turretRotation.x + 180f) % 360f + 360f) % 360f - 180f;
             turretRotation.y = ((turretRotation.y + 180f) % 360f + 360f) % 360f - 180f;
 
-            if (limitTurretX) turretRotation.x = Mathf.Clamp(turretRotation.x, turretLimitX.x, turretLimitX.y);
-            turretRotation.y = Mathf.Clamp(turretRotation.y, turretLimitY.x, turretLimitY.y);
+            if (limitTurretX)
+            {
+                if (turretRotation.x < turretLimitX.x)
+                {
+                    turretRotation.x = turretLimitX.x;
+                    turretVelocity.x = Mathf.Max(0, turretVelocity.x);
+                }
+                if (turretRotation.x > turretLimitX.y)
+                {
+                    turretRotation.x = turretLimitX.y;
+                    turretVelocity.x = Mathf.Min(0, turretVelocity.x);
+                }
+            }
 
-            return turretRotation;
+            if (turretRotation.y < turretLimitY.x)
+            {
+                turretRotation.y = turretLimitY.x;
+                turretVelocity.y = Mathf.Max(0, turretVelocity.y);
+            }
+            if (turretRotation.y > turretLimitY.y)
+            {
+                turretRotation.y = turretLimitY.y;
+                turretVelocity.y = Mathf.Min(0, turretVelocity.y);
+            }
+            
+            this.turretRotation = turretRotation;
+            this.turretVelocity = turretVelocity;
         }
 
         private void CheckIfOnGround()
@@ -433,8 +479,8 @@ namespace TinyTanks.Tanks
         private void AlignSight()
         {
             if (!isDestroyed)
-            {   
-                sightCamera.transform.rotation = Quaternion.LookRotation(worldAimPosition - sightCamera.transform.position, transform.up);
+            {
+                sightCamera.transform.rotation = transform.rotation * Quaternion.Euler(-turretRotation.y, turretRotation.x, 0f);
             }
         }
 
@@ -470,26 +516,24 @@ namespace TinyTanks.Tanks
         {
             public float throttle;
             public float steering;
-            public Vector3 worldAimPosition;
+            public Vector3 worldAimDirection;
+            public Vector2 traverseInput;
 
             public InputData(TankController tank)
             {
                 throttle = tank.throttle;
                 steering = tank.steering;
-                worldAimPosition = tank.worldAimPosition;
+                worldAimDirection = tank.worldAimDirection;
+                traverseInput = tank.traverseInput;
             }
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
             {
                 serializer.SerializeValue(ref throttle);
                 serializer.SerializeValue(ref steering);
-                serializer.SerializeValue(ref worldAimPosition);
+                serializer.SerializeValue(ref worldAimDirection);
+                serializer.SerializeValue(ref traverseInput);
             }
-        }
-        
-        public void SetIsOutOfBounds(bool isOutOfBounds)
-        {
-            
         }
         
         public struct NetworkState : INetworkSerializable
@@ -501,8 +545,7 @@ namespace TinyTanks.Tanks
             public Vector2 turretRotation;
             public Vector2 turretVelocity;
             public bool isDestroyed;
-            public float counterRollAccumilator;
-            public bool isOutOfBounds;
+            public float counterRollAccumulator;
 
             public NetworkState(TankController tank)
             {
@@ -516,8 +559,7 @@ namespace TinyTanks.Tanks
                 turretVelocity = tank.turretVelocity;
 
                 isDestroyed = tank.isDestroyed;
-                counterRollAccumilator = tank.counterRollAccumilator;
-                isOutOfBounds = tank.isOutOfBounds;
+                counterRollAccumulator = tank.counterRollAccumulator;
             }
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -529,7 +571,7 @@ namespace TinyTanks.Tanks
                 serializer.SerializeValue(ref turretRotation);
                 serializer.SerializeValue(ref turretVelocity);
                 serializer.SerializeValue(ref isDestroyed);
-                serializer.SerializeValue(ref counterRollAccumilator);
+                serializer.SerializeValue(ref counterRollAccumulator);
             }
         }
     }

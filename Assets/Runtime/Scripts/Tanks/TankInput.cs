@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using TinyTanks.Level;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -16,7 +14,7 @@ namespace TinyTanks.Tanks
         private int controllerIndex = -1;
 
         public float mouseCameraSensitivity;
-        public float mouseTraverseSensitivity = 0.01f;
+        public float traverseSensitivity = 0.01f;
         public float gamepadSensitivity;
         public RectTransform cursor;
         public ulong ownerId;
@@ -40,6 +38,7 @@ namespace TinyTanks.Tanks
             {
                 existingPlayer.SetControllingIdRpc(null);
             }
+
             SetControllingIdRpc(controllingId);
         }
 
@@ -98,42 +97,21 @@ namespace TinyTanks.Tanks
         {
             if (Application.isFocused && controllingId.HasValue && controllingId.Value == NetworkManager.LocalClientId)
             {
-                var cursorDelta = Vector2.zero;
-                var gp = Gamepad.all.ElementAtOrDefault(controllerIndex);
+                var map = InputSystem.actions.FindActionMap("Tank");
+                tank.throttle = map.FindAction("Throttle").ReadValue<float>();
+                tank.steering = map.FindAction("Steering").ReadValue<float>();
 
-                if (controllerIndex == -1)
-                {
-                    var kb = Keyboard.current;
-                    var m = Mouse.current;
+                if (map.FindAction("Shoot Primary").WasPressedThisFrame()) tank.StartShooting(0);
+                if (map.FindAction("Shoot Primary").WasReleasedThisFrame()) tank.StopShooting(0);
 
-                    tank.throttle = kb.wKey.ReadValue() - kb.sKey.ReadValue();
-                    tank.steering = kb.dKey.ReadValue() - kb.aKey.ReadValue();
+                if (map.FindAction("Shoot Coax").WasPressedThisFrame()) tank.StartShooting(1);
+                if (map.FindAction("Shoot Coax").WasReleasedThisFrame()) tank.StopShooting(1);
 
-                    if (m.leftButton.wasPressedThisFrame) tank.StartShooting(0);
-                    if (m.leftButton.wasReleasedThisFrame) tank.StopShooting(0);
+                if (map.FindAction("Toggle Sight").WasPerformedThisFrame()) tank.SetUseSight(!tank.useSight);
+                if (map.FindAction("Toggle Sight Zoom").WasPerformedThisFrame()) tank.ToggleSightZoom();
 
-                    if (m.rightButton.wasPressedThisFrame) tank.StartShooting(1);
-                    if (m.rightButton.wasReleasedThisFrame) tank.StopShooting(1);
-
-                    if (kb.leftShiftKey.wasPressedThisFrame) tank.SetUseSight(!tank.useSight);
-                    if (kb.cKey.wasPressedThisFrame) tank.ToggleSightZoom();
-
-                    cursorDelta = Mouse.current.delta.ReadValue() * mouseCameraSensitivity;
-                }
-                else if (gp != null)
-                {
-                    cursorDelta = gp.rightStick.ReadValue() * gamepadSensitivity * Time.deltaTime;
-                    tank.throttle = gp.leftStick.y.ReadValue();
-                    tank.steering = gp.leftStick.x.ReadValue();
-
-                    if (gp.rightShoulder.wasPressedThisFrame) tank.StartShooting(0);
-                    if (gp.rightShoulder.wasReleasedThisFrame) tank.StopShooting(0);
-
-                    if (gp.leftShoulder.wasPressedThisFrame) tank.StartShooting(1);
-                    if (gp.leftShoulder.wasReleasedThisFrame) tank.StopShooting(1);
-
-                    if (gp.buttonSouth.wasPressedThisFrame) tank.SetUseSight(!tank.useSight);
-                }
+                var traverseTurret = map.FindAction("Traverse Turret").IsPressed();
+                var cursorDelta = Mouse.current.delta.ReadValue() * mouseCameraSensitivity;
 
                 var cameraRotation = tank.cameraRotation;
                 var sensitivityScaling = Mathf.Tan(mainCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
@@ -142,26 +120,19 @@ namespace TinyTanks.Tanks
                 cameraRotation.x %= 360f;
                 cameraRotation.y = Mathf.Clamp(cameraRotation.y, tank.cameraFreeLookClamp.x, tank.cameraFreeLookClamp.y);
 
-                var ray = new Ray(mainCamera.transform.position, Quaternion.Euler(-cameraRotation.y, cameraRotation.x, 0f) * Vector3.forward);
-                tank.worldAimPosition = ray.GetPoint(1024f);
-                var hits = Physics.RaycastAll(ray, 1024f).OrderBy(e => e.distance);
-                foreach (var hit in hits)
+                if (traverseTurret)
                 {
-                    if (hit.collider.transform.IsChildOf(tank.transform)) continue;
-                    tank.worldAimPosition = hit.point;
-                    break;
+                    tank.traverseInput += cursorDelta * traverseSensitivity;
+                    tank.worldAimDirection = mainCamera.transform.forward;
+                }
+                else
+                {
+                    tank.traverseInput = Vector2.zero;
                 }
 
                 followCamera.freeLookRotation = cameraRotation;
                 tank.cameraRotation = cameraRotation;
             }
-        }
-
-        private void LateUpdate()
-        {
-            cursorPosition = mainCamera.WorldToScreenPoint(tank.worldAimPosition);
-            cursor.gameObject.SetActive(IsOwner);
-            cursor.anchoredPosition = cursorPosition;
         }
     }
 }

@@ -9,17 +9,16 @@ namespace TinyTanks.UI
     {
         public FullScreenPassRendererFeature scopeFeature;
         public float offsetSmoothing = 0.1f;
+        public float lagAmplitude;
 
         private Vector2 offset;
         private Vector2 smoothedOffset;
-        
+
         private TankController tank;
-        private Camera mainCamera;
 
         private void Awake()
         {
             tank = GetComponentInParent<TankController>();
-            mainCamera = Camera.main;
         }
 
         private void OnEnable()
@@ -37,24 +36,21 @@ namespace TinyTanks.UI
         private void LateUpdate()
         {
             if (!tank.isActiveViewer) return;
+            var transform = this.transform as RectTransform;
 
             offset = GetOffset();
             smoothedOffset = Vector2.Lerp(smoothedOffset, offset, Time.deltaTime / Mathf.Max(Time.deltaTime, offsetSmoothing));
-            transform.position = new Vector3(smoothedOffset.x, smoothedOffset.y, transform.position.z);
-            Shader.SetGlobalVector("_ScopeOffset", smoothedOffset - new Vector2(Screen.width, Screen.height) / 2f);
+            transform.anchoredPosition = new Vector2(smoothedOffset.x, smoothedOffset.y);
+            Shader.SetGlobalVector("_ScopeOffset", smoothedOffset);
 
             transform.localScale = Vector3.one * tank.sightZoom;
         }
 
-        private Vector2 GetOffset()
-        {
-            var traverseLeft = new Vector2()
-            {
-                x = Mathf.DeltaAngle(tank.turretTarget.x, tank.turretRotation.x),
-                y = Mathf.DeltaAngle(tank.turretTarget.y, tank.turretRotation.y),
-            };
+        private Vector2 GetOffset() => -tank.turretVelocity * lagAmplitude;
 
-            return mainCamera.WorldToScreenPoint(mainCamera.transform.position + mainCamera.transform.rotation * Quaternion.Euler(-traverseLeft.y, traverseLeft.x, 0f) * Vector3.forward);
+        private void OnValidate()
+        {
+            var transform = this.transform as RectTransform;
         }
     }
 }

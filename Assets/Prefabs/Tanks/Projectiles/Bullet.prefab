@@ -53,8 +53,12 @@ PrefabInstance:
       value: 0.04
       objectReference: {fileID: 0}
     - target: {fileID: 3785014412619377957, guid: 7d9f04090572f1b4992b290da71ec78d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 461dbbd72ec8bc04593710c89457cce0, type: 2}
+    - target: {fileID: 3785014412619377957, guid: 7d9f04090572f1b4992b290da71ec78d, type: 3}
       propertyPath: m_Parameters.widthMultiplier
-      value: 0.01
+      value: 0.03
       objectReference: {fileID: 0}
     - target: {fileID: 5331638167734849736, guid: 7d9f04090572f1b4992b290da71ec78d, type: 3}
       propertyPath: hitFx

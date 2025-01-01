@@ -1,4 +1,5 @@
 using System;
+using TinyTanks.Level;
 using TinyTanks.Tanks;
 using Unity.Netcode;
 using UnityEngine;
@@ -12,6 +13,10 @@ namespace TinyTanks.Health
         public int currentHealth;
         public int baseDefense;
         public int baseArmorClass;
+        public bool invunerable;
+
+        [Space]
+        public SurfaceHitEffect surfaceHitEffect;
 
         public TankController tank { get; private set; }
 
@@ -19,13 +24,15 @@ namespace TinyTanks.Health
 
         public void DamageDirect(DamageInstance damage, DamageSource source, ICanBeDamaged.DamageReport report)
         {
-            currentHealth -= report.finalDamage;
+            if (invunerable) currentHealth = maxHealth;
+            else currentHealth -= report.finalDamage;
+            
+            if (surfaceHitEffect != null) surfaceHitEffect.Play(source, report);
             if (currentHealth <= 0)
             {
                 currentHealth = 0;
                 tank.SetIsDestroyed(true);
             }
-
             NotifyDamamgedClientRpc(damage, source, report, currentHealth);
         }
 
